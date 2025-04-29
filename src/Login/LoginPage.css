@@ -1,0 +1,75 @@
+/* Login Page Styles */
+.login-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80vh;
+    background: white;
+    color: black;
+  }
+  
+  .login-container {
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 30px;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+  }
+  
+  .login-title {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    font-weight: 700;
+  }
+  
+  .login-form .input-group {
+    margin-bottom: 20px;
+  }
+  
+  .login-form label {
+    display: block;
+    text-align: left;
+    font-size: 1rem;
+    margin-bottom: 5px;
+  }
+  
+  .login-form input {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-top: 5px;
+  }
+  
+  .login-button {
+    width: 100%;
+    padding: 15px;
+    background-color: #ff5722;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+  }
+  
+  .login-button:hover {
+    background-color: #e64a19;
+  }
+  
+  .signup-link {
+    margin-top: 20px;
+    font-size: 1rem;
+  }
+  
+  .signup-link-text {
+    color: #ff5722;
+    text-decoration: none;
+  }
+  
+  .signup-link-text:hover {
+    text-decoration: underline;
+  }
+  

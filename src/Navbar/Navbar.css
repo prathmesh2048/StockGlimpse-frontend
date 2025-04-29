@@ -1,0 +1,64 @@
+/* Navbar Styles */
+.navbar {
+    background: transparent; /* Set navbar to be transparent */
+    padding: 15px 7%;  /* Slightly thicker padding for a cleaner look */
+    position: absolute;  /* Position it on top of the hero section */
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;  /* Keep it above the hero section */
+    color: white;  /* White text for the navbar links */
+  }
+  
+  .navbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .navbar-logo {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #ff5722;  /* Keeping the logo color the same */
+    text-decoration: none;
+  }
+  
+  .navbar-menu {
+    display: flex;
+    list-style: none;
+    gap: 20px;
+  }
+  
+  .navbar-item {
+    font-size: 1rem;
+  }
+  
+  .navbar-links {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+  }
+  
+  .navbar-links:hover {
+    color: #ff5722; /* Hover effect to match the CTA button */
+  }
+  
+  /* Mobile Responsiveness */
+  @media (max-width: 768px) {
+    .navbar-container {
+      flex-direction: column;
+      align-items: center;
+    }
+  
+    .navbar-menu {
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 15px;
+    }
+  
+    .navbar-logo {
+      margin-bottom: 15px;
+    }
+  }
+  
