@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import ENV from "../config"; // import your config file
 import "./LoginPage.css";
 import LoginButton from "./LoginButton";
+import { setToken } from '../utils/auth';
 
 const LoginPage = () => {
 
@@ -10,6 +11,7 @@ const LoginPage = () => {
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleLogin = async (e) => {
 
@@ -31,7 +33,7 @@ const LoginPage = () => {
             const data = await response.json();
             const jwtToken = data.jwtToken;
 
-            localStorage.setItem("jwtToken", jwtToken);
+            setToken(jwtToken);
 
             console.log("Login successful, token saved.");
             navigate("/");
@@ -59,13 +61,26 @@ const LoginPage = () => {
                     </div>
                     <div className="input-group">
                         <label htmlFor="password">Password</label>
-                        <input
-                            type="password"
-                            id="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
+                        <div className="password-container">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                id="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                            <span
+                                className="eye-icon"
+                                onClick={() => setShowPassword(!showPassword)} // Toggle password visibility
+                                style={{ cursor: "pointer" }}
+                            >
+                                {showPassword ? (
+                                    <img class="eye-icon" src="/images/open.png" alt="eye open" /> // Open eye icon
+                                ) : (
+                                    <img class="eye-icon" src="/images/close.png" alt="eye closed" /> // Closed eye icon
+                                )}
+                            </span>
+                        </div>
                     </div>
                     <button type="submit" className="login-button">
                         Login

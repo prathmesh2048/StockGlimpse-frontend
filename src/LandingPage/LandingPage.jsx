@@ -4,11 +4,18 @@ import HowItWorks from './HowItWorks';
 import Footer from './Footer';
 import OneTapLogin from '../Login/oneTapLogin';
 import Navbar from '../Navbar/Navbar';
+import { getToken } from '../utils/auth';
+import useUser from '../hooks/useUser';
+
 
 const LandingPage = () => {
 
+  const { user, loading } = useUser();
+  if (loading) return <div>Loading...</div>;
 
-  const isLoggedIn = localStorage.getItem('jwtToken') !== null;
+  const isLoggedIn = getToken() !== null;
+  // if (!user) return <div>Please log in</div>;
+
   return (
     <div className="landing-container">
       <Navbar />

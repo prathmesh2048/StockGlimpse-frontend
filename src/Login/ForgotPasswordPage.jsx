@@ -6,6 +6,7 @@ import "./LoginPage.css";
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const handleForgotPassword = async (e) => {
         e.preventDefault();
@@ -26,6 +27,8 @@ const ForgotPasswordPage = () => {
         } catch (error) {
             console.error("Forgot password error:", error);
             alert("Error sending password reset link.");
+        } finally {
+            setLoading(false);
         }
     };
 

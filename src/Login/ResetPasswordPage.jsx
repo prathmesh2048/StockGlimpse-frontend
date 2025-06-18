@@ -8,6 +8,7 @@ const ResetPasswordPage = () => {
     const location = useLocation();
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
 
     const queryParams = new URLSearchParams(location.search);
     const token = queryParams.get("token");
@@ -15,7 +16,6 @@ const ResetPasswordPage = () => {
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     const handleResetPassword = async (e) => {
-
         e.preventDefault();
         if (password !== confirmPassword) {
             alert("Passwords do not match.");
@@ -35,7 +35,7 @@ const ResetPasswordPage = () => {
                 throw new Error("Reset failed");
             }
             alert("Password reset successful. Please login.");
-            await sleep(2000);
+            await sleep(500);
             navigate("/login");
         } catch (error) {
             console.error("Reset password error:", error);
@@ -60,13 +60,26 @@ const ResetPasswordPage = () => {
                     </div>
                     <div className="input-group">
                         <label htmlFor="confirmPassword">Confirm New Password</label>
-                        <input
-                            type="password"
-                            id="confirmPassword"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            required
-                        />
+                        <div className="password-container">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                id="confirmPassword"
+                                value={confirmPassword} // Change this to confirmPassword
+                                onChange={(e) => setConfirmPassword(e.target.value)} // Update the confirmPassword state
+                                required
+                            />
+                            <span
+                                className="eye-icon"
+                                onClick={() => setShowPassword(!showPassword)} // Toggle password visibility
+                                style={{ cursor: "pointer" }}
+                            >
+                                {showPassword ? (
+                                    <img className="eye-icon" src="/images/open.png" alt="eye open" /> // Open eye icon
+                                ) : (
+                                    <img className="eye-icon" src="/images/close.png" alt="eye closed" /> // Closed eye icon
+                                )}
+                            </span>
+                        </div>
                     </div>
                     <button type="submit" className="login-button">
                         Reset Password

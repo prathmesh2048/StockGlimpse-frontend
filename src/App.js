@@ -6,12 +6,15 @@ import LoginPage from './Login/LoginPage';
 import SignupPage from './Login/SignupPage';
 import ForgotPasswordPage from './Login/ForgotPasswordPage';
 import ResetPasswordPage from './Login/ResetPasswordPage';
+// import ChartScreen from './Chart/ChartScreen';
+import ChartScreen1 from './Chart/ChartScreen1';
 
 function App() {
   return (
       <Router>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/chart-screen" element={<ChartScreen1 />} /> 
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />

@@ -1,17 +1,22 @@
 import React from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate hook for navigation
 import "./Navbar.css";  // Import the CSS
+import { getToken, clearToken } from '../utils/auth';
+import useUser from "../hooks/useUser";
 
 const Navbar = () => {
+
   const navigate = useNavigate();
   
-  
-  const isLoggedIn = localStorage.getItem('jwtToken') !== null;
+  const { user, loading } = useUser();
+  if (loading) return <div>Loading...</div>;
+
+  const isLoggedIn = user !== null;
 
   const handleSignout = () => {
-    localStorage.removeItem("jwtToken");
-   
+    clearToken();
     navigate("/");
+
   };
 
   return (
@@ -46,7 +51,10 @@ const Navbar = () => {
           ) : (
             <>
               <li className="navbar-item">
-                <a href="/profile" className="navbar-links">Welcome</a>
+                <a href="/profile" className="navbar-links">Welcome {user.first_name} {user.last_name}</a>
+              </li>
+              <li className="navbar-item">
+                <a href="/chart-screen" className="navbar-links">Charts</a>
               </li>
               <li className="navbar-item">
                 <a onClick={handleSignout} href="/" className="navbar-links">

@@ -1,6 +1,7 @@
 import { useGoogleOneTapLogin } from '@react-oauth/google';
 import ENV from "../config";
 import { useNavigate } from "react-router-dom";
+import { setToken } from '../utils/auth';
 
 const OneTapLogin = () => {
 
@@ -27,8 +28,8 @@ const OneTapLogin = () => {
         const { jwtToken } = data; // Get the JWT token
 
         if (jwtToken) {
-          localStorage.setItem("jwtToken", jwtToken); // Store in localStorage
-          navigate('/'); // Redirect to home page
+          setToken(jwtToken);
+          navigate('/');
           console.log("JWT token saved:", jwtToken);
         } else {
           console.error('JWT token not found in response');
