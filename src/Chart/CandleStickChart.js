@@ -1,100 +1,16 @@
-import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
+import * as d3 from 'd3';
+import {
+  annotation,
+  annotationCalloutCurve,
+  annotationCustomType
+} from 'd3-svg-annotation';
 
-export const parseDate = (dateStr) => new Date(dateStr);
 
-export const getCursorPoint = (id, evt) => {
-  let svg = document.querySelector(`#${id}`);
-  let pt = svg.createSVGPoint();
-  let cursorPoint = (evt) => {
-    if (evt.touches && evt.touches[0]) {
-      pt.x = evt.touches[0].clientX;
-      pt.y = evt.touches[0].clientY;
-    } else {
-      pt.x = evt.clientX;
-      pt.y = evt.clientY;
-    }
+import { colors, config, getCursorPoint, parseDate } from './CandleStickChartUtils.js';
 
-    return pt.matrixTransform(svg.getScreenCTM().inverse());
-  };
-
-  return cursorPoint(evt);
-};
-
-export const findFixedDataIndex = (dataPoint, data) => {
-  let index = 0;
-  let min = Math.abs(parseDate(dataPoint) - parseDate(data[0].date));
-  for (let i = 0; i < data.length; i++) {
-    let newMin = Math.abs(parseDate(dataPoint) - parseDate(data[i].date));
-    if (newMin < min) {
-      min = newMin;
-      index = i;
-    }
-  }
-  return index;
-};
-
-export const colors = () => {
-  return {
-    grid: '#222631',
-    background: '#171b26',
-    candleInfoText: '#b2b5be',
-    candleInfoTextUp: '#089981',
-    candleInfoTextDown: '#e13443',
-    tickColor: '#020814',
-    downCandlesStroke: '#e13443',
-    downCandlesFill: '#e13443',
-    downCandlesTail: '#e13443',
-    upCandlesStroke: '#089981',
-    upCandlesFill: '#089981',
-    upCandlesTail: '#089981',
-    selectorLine: 'rgba(178,181,190,0.5)',
-    selectorLableBackground: '#2a2e39',
-    selectorLabelText: '#b2b5be',
-    short: '#fff',
-    shortStroke: '#fff',
-    long: '#fff',
-    longStroke: '#fff',
-    sl: '#F9DB04',
-    slStroke: '#F9DB04',
-    tp: '#04F5F9',
-    tpStroke: '#04F5F9',
-    activeTools: '#04F5F9',
-    deActiveTools: '#ffffff',
-  };
-};
-
-export const config = (width, height) => {
-  return {
-    width: width,
-    height: height,
-    candleTailWidth: 1,
-    paddingLeft: 25,
-    paddingTop: 10,
-    paddingBottom: 30,
-    yPaddingScaleTop: 0.04,
-    yPaddingScaleBottom: 0.03,
-    xTicksTransform: 10,
-    xLabelWidth: 110,
-    xLabelHeight: 25,
-    xLabelFontSize: 12,
-    yLabelHeight: 25,
-    yLabelFontSize: 12,
-    decimal: 3,
-    charWidth: 7.8,
-    selectoreStrokeDashArray: '2,2',
-    timeFormat: "%a %d %b'%y",
-    mobileBreakPoint: 600,
-    //calcualte after set data//
-    infoTextWidth: undefined,
-    infoTextWidthMeta: undefined,
-    yLabelWidth: undefined,
-    paddingRight: undefined,
-    svgWidth: undefined,
-    svgHeight: undefined,
-  };
-};
 
 class CandleStickChart {
+
   #colors;
   #config;
   #maxPrice;
@@ -151,7 +67,7 @@ class CandleStickChart {
 
   setData(newData) {
     this.data = newData;
-    this.#filteredData = this.data;
+    this.#filteredData = newData;
     this.destroy()
     this.draw();
   }
@@ -210,6 +126,7 @@ class CandleStickChart {
   }
 
   #calculateYscale() {
+
     let yMinMax;
     if (this.#filteredData.length === 0) {
       yMinMax = [0, 1];
@@ -230,6 +147,7 @@ class CandleStickChart {
   }
 
   #calculateCandleWidth() {
+
     if (this.#filteredData.length === 0) {
       this.#candleLockerWidth = 0;
       this.#candleWidth = 0;
@@ -261,6 +179,7 @@ class CandleStickChart {
   }
 
   #calculateExtendConfigs() {
+
     this.#calculateInfoTextWidth();
     this.#calculateInfoTextWidthMeta();
     this.#calculateYLabelWidth();
@@ -271,6 +190,7 @@ class CandleStickChart {
   }
 
   #setObjectIDs() {
+
     let randomNumber = (Math.random() * 10000).toFixed(0);
     this.#objectIDs = {};
     this.#objectIDs.svgId = `${this.id}-${randomNumber}`;
@@ -291,6 +211,7 @@ class CandleStickChart {
   }
 
   #createLayout() {
+
     d3.select(`#${this.id}`)
       .style(
         'padding',
@@ -376,6 +297,7 @@ class CandleStickChart {
   }
 
   #createInfoText() {
+
     d3.select(`#${this.#objectIDs.svgId}`)
       .append('rect')
       .attr('id', this.#objectIDs.candleInfoIdBackground)
@@ -511,6 +433,7 @@ class CandleStickChart {
   }
 
   #createCandlesLow() {
+    
     d3.selectAll(`#${this.#objectIDs.candleContainerId} .candle`)
       .append('rect')
       .attr('width', this.#config.candleTailWidth)
@@ -534,93 +457,6 @@ class CandleStickChart {
       );
   }
 
-  #createShortPositions() {
-    d3.select(
-      `#${this.#objectIDs.svgId} foreignObject #${this.#objectIDs.candleContainerId
-      }`
-    )
-      .selectAll()
-      .data(this.#filteredData.filter((x) => x.short))
-      .enter()
-      .append('polygon')
-      .attr(
-        'points',
-        (d) =>
-          `${this.#xScaleFunc(parseDate(d.Date)) - this.#candleWidth / 2
-          },${this.#yScaleFunc(d.short)} ${this.#xScaleFunc(parseDate(d.Date)) + this.#candleWidth / 2
-          },${this.#yScaleFunc(d.short)} ${this.#xScaleFunc(
-            parseDate(d.Date)
-          )},${this.#yScaleFunc(d.short) + this.#candleWidth / 1.5}`
-      )
-      .attr('fill', this.#colors.short)
-      .attr('stroke', this.#colors.shortStroke)
-      .attr('class', 'short');
-  }
-
-  #createLongPositions() {
-    d3.select(
-      `#${this.#objectIDs.svgId} foreignObject #${this.#objectIDs.candleContainerId
-      }`
-    )
-      .selectAll()
-      .data(this.#filteredData.filter((x) => x.long))
-      .enter()
-      .append('polygon')
-      .attr(
-        'points',
-        (d) =>
-          `${this.#xScaleFunc(parseDate(d.Date)) - this.#candleWidth / 2
-          },${this.#yScaleFunc(d.long)} ${this.#xScaleFunc(parseDate(d.Date)) + this.#candleWidth / 2
-          },${this.#yScaleFunc(d.long)} ${this.#xScaleFunc(
-            parseDate(d.Date)
-          )},${this.#yScaleFunc(d.long) - this.#candleWidth / 1.5}`
-      )
-      .attr('fill', this.#colors.long)
-      .attr('stroke', this.#colors.longStroke)
-      .attr('class', 'long');
-  }
-
-  #createStopLosses() {
-    d3.select(
-      `#${this.#objectIDs.svgId} foreignObject #${this.#objectIDs.candleContainerId
-      }`
-    )
-      .selectAll()
-      .data(this.#filteredData.filter((x) => x.short || x.long))
-      .enter()
-      .append('rect')
-      .attr('width', this.#candleWidth * 1.6)
-      .attr('height', 3)
-      .attr(
-        'x',
-        (d) => this.#xScaleFunc(parseDate(d.Date)) - this.#candleWidth / 1.2
-      )
-      .attr('y', (d) => this.#yScaleFunc(d.sl))
-      .attr('fill', this.#colors.sl)
-      .attr('stroke', this.#colors.slStroke)
-      .attr('class', 'sl');
-  }
-
-  #createTakeProfits() {
-    d3.select(
-      `#${this.#objectIDs.svgId} foreignObject #${this.#objectIDs.candleContainerId
-      }`
-    )
-      .selectAll()
-      .data(this.#filteredData.filter((x) => x.short || x.long))
-      .enter()
-      .append('rect')
-      .attr('width', this.#candleWidth * 1.6)
-      .attr('height', 3)
-      .attr(
-        'x',
-        (d) => this.#xScaleFunc(parseDate(d.Date)) - this.#candleWidth / 1.2
-      )
-      .attr('y', (d) => this.#yScaleFunc(d.tp))
-      .attr('fill', this.#colors.tp)
-      .attr('stroke', this.#colors.tpStroke)
-      .attr('class', 'tp');
-  }
 
   #createToolsBtns() {
     d3.select(`#${this.id}`)
@@ -1149,17 +985,17 @@ class CandleStickChart {
   }
 
   #handleMeasure(location) {
-    
+
     if (this.#mode !== 'measure' || this.#drawAndMeasureLocked) return;
-  
+
     const svg = d3.select(`#${this.#objectIDs.svgId}`);
-  
+
     if (!this.#measureState.start) {
       svg.selectAll('.measure-rect').remove();
       svg.selectAll('.measure-label').remove();
-  
+
       this.#measureState.start = location;
-  
+
       this.#measureState.rect = svg.append('rect')
         .attr('class', 'measure-rect')
         .attr('x', location.x)
@@ -1169,14 +1005,14 @@ class CandleStickChart {
         .attr('fill', 'rgba(0,255,0,0.2)')
         .attr('stroke', 'lime')
         .attr('stroke-width', 1);
-  
+
       this.#measureState.label = svg.append('text')
         .attr('class', 'measure-label')
         .attr('x', location.x)
         .attr('y', location.y - 8)
         .attr('fill', 'white')
         .attr('font-size', '12px');
-  
+
       d3.select(`#${this.#objectIDs.svgId}`)
         .on('mousemove.measure', (event) => {
           const current = getCursorPoint(this.#objectIDs.svgId, event);
@@ -1184,12 +1020,12 @@ class CandleStickChart {
             this.#updateMeasureBox(current);
           }
         });
-  
+
     } else {
       // 🧠 Lock out trailing mousemove
       this.#drawAndMeasureLocked = true;
       d3.select(`#${this.#objectIDs.svgId}`).on('mousemove.measure', null);
-  
+
       // Reset in next frame
       requestAnimationFrame(() => {
         this.#measureState.start = null;
@@ -1199,9 +1035,6 @@ class CandleStickChart {
       });
     }
   }
-  
-
-
 
   #updateMeasureBox(current) {
     const { start, rect, label } = this.#measureState;
@@ -1235,8 +1068,76 @@ class CandleStickChart {
       .text(`${diff.toFixed(2)} (${percent}%) | ${numBars} bars | ${numDays} days`);
   }
 
-
-
+  #drawStaticAnnotationFromData() {
+    const data = this.#filteredData;
+    if (!data?.length) return;
+  
+    const d = data[Math.floor(Math.random() * data.length)];
+    const parseTime = d => new Date(d);
+    const formatTime = d3.timeFormat("%Y-%m-%d");
+  
+    const customType = annotationCustomType(annotationCalloutCurve, {
+      className: "custom",
+      connector: {
+        type: "elbow",
+        end: "arrow",
+        curve: d3.curveBasis
+      },
+      note: {
+        lineType: "horizontal"
+      }
+    });
+  
+    const makeAnnotation = annotation()
+      .editMode(true)
+      .notePadding(15)
+      .type(customType)
+      .accessors({
+        x: d => this.#xScaleFunc(parseTime(d.Date)),
+        y: d => this.#yScaleFunc(d.Close)
+      })
+      .accessorsInverse({
+        Date: d => formatTime(this.#xScaleFunc.invert(d.x)),
+        Close: d => this.#yScaleFunc.invert(d.y)
+      })
+      .annotations([
+        {
+          note: {
+            title: `BUY ₹${d.Close.toFixed(2)}`,
+            label: `You bought X qty for this fking price 💸`,
+            align: "middle",
+            wrap: 150
+          },
+          data: d,
+          dx: 40,
+          dy: 100,
+          subject: {
+            radius: 20,
+            radiusPadding: 5
+          },
+          color: "#ffff",
+          connector: {
+            points: 1
+          },
+          disable: ["subject"]
+        }
+      ]);
+  
+    const group = d3.select(`#${this.#objectIDs.candleContainerId}`)
+      .append("g")
+      .attr("class", "annotation-group")
+      .call(makeAnnotation);
+  
+    // 👇 Inline styling of font sizes
+    group.selectAll(".annotation-note-title")
+      .style("font-size", "13px");
+  
+    group.selectAll(".annotation-note-label")
+      .style("font-size", "11px")
+      .style("fill", "#bbbbbb");
+  }
+  
+  
 
   #handleScrollZoom(e) {
 
@@ -1508,6 +1409,7 @@ class CandleStickChart {
   }
 
   #removeEventListeners() {
+
     if (!this.#objectIDs.candleContainerId) return;
 
     d3.selectAll(`#${this.#objectIDs.candleContainerId} .candle`)
@@ -1609,10 +1511,10 @@ class CandleStickChart {
       document.getElementById(this.#objectIDs.svgId).remove();
   }
 
+
   draw() {
 
     this.destroy();
-
     this.#createLayout();
     this.#calculateXscale();
     this.#calculateYscale();
@@ -1626,29 +1528,11 @@ class CandleStickChart {
     this.#createCandlesBody();
     this.#createCandlesHigh();
     this.#createCandlesLow();
-    this.#createShortPositions();
-    this.#createLongPositions();
-    this.#createStopLosses();
-    this.#createTakeProfits();
     this.#addEvenetListeners();
+    this.#drawStaticAnnotationFromData();
+
   }
+
 }
 
 export default CandleStickChart;
-
-
-// let chart = new CandleStickChart(
-//   window.innerWidth,
-//   window.innerHeight - 50,
-//   data,
-//   'chart1'
-// );
-// chart.draw();
-
-// window.addEventListener('resize', () => {
-//   chart.setConfig({
-//     width: window.innerWidth,
-//     height: window.innerHeight - 50,
-//   });
-//   chart.draw();
-// });
