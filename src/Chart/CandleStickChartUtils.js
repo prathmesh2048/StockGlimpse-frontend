@@ -31,14 +31,15 @@ export const findFixedDataIndex = (dataPoint, data) => {
   return index;
 };
 
-export const colors = () => {
+export const colors = (theme) => {
   return {
-    grid: '#222631',
-    background: '#171b26',
+    grid: theme === "dark" ? 'rgb(34, 38, 49)' : 'rgb(225, 225, 225)',
+    gridBackground: theme === "dark" ? "rgb(23, 27, 38)" : "rgb(244, 253, 254)",
+    background: theme === "dark" ? 'rgb(23, 27, 38)' : 'rgba(191, 193, 198,0.1)',
     candleInfoText: '#b2b5be',
     candleInfoTextUp: '#089981',
     candleInfoTextDown: '#e13443',
-    tickColor: '#020814',
+    tickColor: theme === "dark" ? 'rgb(255, 255, 255)' : 'rgb(74, 76, 82)', // this color is used for x and y labels
     downCandlesStroke: '#e13443',
     downCandlesFill: '#e13443',
     downCandlesTail: '#e13443',
@@ -56,8 +57,11 @@ export const colors = () => {
     slStroke: '#F9DB04',
     tp: '#04F5F9',
     tpStroke: '#04F5F9',
-    activeTools: '#04F5F9',
-    deActiveTools: '#ffffff',
+    activeTools: theme === "dark" ? 'rgb(4, 245, 249)' : 'rgb(13, 110, 253)',
+    deActiveTools: theme === "dark" ? 'rgb(255, 255, 255)' : 'rgb(85, 85, 85)',
+    annotationTextColor: theme === "dark" ? "rgb(203, 203, 203)" : "rgb(5, 4, 4)",
+    annotationLineColor: theme === "dark" ? "rgb(203, 203, 203)" : "rgb(5, 4, 4)",
+    lineColor: theme === "dark" ? "rgb(203, 203, 203)" : "rgb(5, 4, 4)",
   };
 };
 

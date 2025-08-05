@@ -37,13 +37,19 @@ class CandleStickChart {
   #drawPoint2 = null;
   #tempLine = null;
   #measureState = null;
-
-
-  constructor(width, height, data, id) {
-    this.#colors = colors();
+  #chartMode = null;
+  #annotationsData = [];
+  #theme = null;
+  #annotationOverrides = new Map();
+  
+  constructor(width, height, data, stockAnnotationsData, id, theme = "dark") {
+    console.log("logging data", data);
+    this.#theme = theme
+    this.#colors = colors(theme);
     this.#config = config(width, height);
     this.#maxPrice = d3.max(data.map((x) => x.High));
     this.data = data.sort((a, b) => parseDate(a) - parseDate(b));
+    this.#annotationsData = stockAnnotationsData;
     this.#filteredData = data;
     this.id = id;
     this.#lockSelectorX = false;
@@ -63,6 +69,19 @@ class CandleStickChart {
     };
 
     this.#modeHandler('pan');
+    this.#chartMode = 'line';
+    this.#annotationOverrides = this.#annotationOverrides || new Map();
+
+  }
+
+  setAnnotations(annotations) {
+    this.#annotationsData = annotations;
+  }
+
+  toggleChartMode() {
+
+    this.#chartMode = this.#chartMode === 'candlestick' ? 'line' : 'candlestick';
+    this.draw();
   }
 
   setData(newData) {
@@ -211,7 +230,6 @@ class CandleStickChart {
   }
 
   #createLayout() {
-
     d3.select(`#${this.id}`)
       .style(
         'padding',
@@ -226,7 +244,7 @@ class CandleStickChart {
       .attr('height', this.#config.svgHeight)
       .style('overflow', 'inherit')
       .style('cursor', 'crosshair')
-      .style('background-color', '#171b26') // backgroundColor
+      .style('background-color', this.#colors.gridBackground) // backgroundColor
       .attr('id', this.#objectIDs.svgId)
       .style('margin-top', '-50px');
   }
@@ -379,46 +397,123 @@ class CandleStickChart {
       .attr('class', 'candle');
   }
 
+
   #createCandlesBody() {
-    d3.selectAll(`#${this.#objectIDs.candleContainerId} .candle`)
-      .append('rect')
-      .attr('width', this.#candleWidth)
-      .attr('height', (d) =>
-        d.Open > d.Close
-          ? this.#yScaleFunc(d.Close) - this.#yScaleFunc(d.Open)
-          : this.#yScaleFunc(d.Open) - this.#yScaleFunc(d.Close)
-      )
-      .attr(
-        'x',
-        (d) => this.#xScaleFunc(parseDate(d.Date)) - this.#candleWidth / 2
-      )
-      .attr('y', (d) =>
-        d.Open > d.Close ? this.#yScaleFunc(d.Open) : this.#yScaleFunc(d.Close)
-      )
-      .attr('stroke', (d) =>
-        d.Open > d.Close
-          ? this.#colors.upCandlesStroke
-          : this.#colors.downCandlesStroke
-      )
-      .attr('fill', (d) =>
-        d.Open > d.Close
-          ? this.#colors.upCandlesFill
-          : this.#colors.downCandlesFill
-      );
+    const container = d3.selectAll(`#${this.#objectIDs.candleContainerId} .candle`);
+
+    if (this.#chartMode === 'candlestick') {
+      container
+        .append('rect')
+        .attr('width', this.#candleWidth)
+        .attr('height', (d) =>
+          d.Open > d.Close
+            ? this.#yScaleFunc(d.Close) - this.#yScaleFunc(d.Open)
+            : this.#yScaleFunc(d.Open) - this.#yScaleFunc(d.Close)
+        )
+        .attr(
+          'x',
+          (d) => this.#xScaleFunc(parseDate(d.Date)) - this.#candleWidth / 2
+        )
+        .attr('y', (d) =>
+          d.Open > d.Close ? this.#yScaleFunc(d.Open) : this.#yScaleFunc(d.Close)
+        )
+        .attr('stroke', (d) =>
+          d.Open > d.Close
+            ? this.#colors.upCandlesStroke
+            : this.#colors.downCandlesStroke
+        )
+        .attr('fill', (d) =>
+          d.Open > d.Close
+            ? this.#colors.upCandlesFill
+            : this.#colors.downCandlesFill
+        );
+
+      // Remove any old line chart
+      d3.selectAll(`#${this.#objectIDs.candleContainerId} .line-chart`).remove();
+
+    } else if (this.#chartMode === 'line') {
+      // Remove candle rects if switching to line mode
+      container.selectAll('rect').remove();
+
+      const lineData = container.data();
+
+      const line = d3.line()
+        .x(d => this.#xScaleFunc(parseDate(d.Date)))
+        .y(d => this.#yScaleFunc(d.Close));
+
+      d3.select(`#${this.#objectIDs.candleContainerId}`)
+        .append('path')
+        .attr('class', 'line-chart')
+        .attr('fill', 'none')
+        .attr('stroke', 'steelblue')
+        .attr('stroke-width', 2)
+        .attr('d', line(lineData));
+    }
   }
 
+
+  // #createCandlesHigh() {
+
+  //   d3.selectAll(`#${this.#objectIDs.candleContainerId} .candle`)
+  //     .append('rect')
+  //     .attr('width', this.#config.candleTailWidth)
+  //     .attr('height', (d) => {
+
+  //       return d.Open > d.Close
+  //         ? this.#yScaleFunc(d.Open) - this.#yScaleFunc(d.High)
+  //         : this.#yScaleFunc(d.Close) - this.#yScaleFunc(d.High);
+  //     })
+
+  //     .attr(
+  //       'x',
+  //       (d) =>
+  //         this.#xScaleFunc(parseDate(d.Date)) - this.#config.candleTailWidth / 2
+  //     )
+  //     .attr('y', (d) => this.#yScaleFunc(d.High))
+  //     .attr('fill', (d) =>
+  //       d.Open > d.Close
+  //         ? this.#colors.upCandlesTail
+  //         : this.#colors.downCandlesTail
+  //     );
+  // }
+
+  // #createCandlesLow() {
+
+  //   d3.selectAll(`#${this.#objectIDs.candleContainerId} .candle`)
+  //     .append('rect')
+  //     .attr('width', this.#config.candleTailWidth)
+  //     .attr('height', (d) =>
+  //       d.Open > d.Close
+  //         ? this.#yScaleFunc(d.Low) - this.#yScaleFunc(d.Close)
+  //         : this.#yScaleFunc(d.Low) - this.#yScaleFunc(d.Open)
+  //     )
+  //     .attr(
+  //       'x',
+  //       (d) =>
+  //         this.#xScaleFunc(parseDate(d.Date)) - this.#config.candleTailWidth / 2
+  //     )
+  //     .attr('y', (d) =>
+  //       d.Open > d.Close ? this.#yScaleFunc(d.Close) : this.#yScaleFunc(d.Open)
+  //     )
+  //     .attr('fill', (d) =>
+  //       d.Open > d.Close
+  //         ? this.#colors.upCandlesTail
+  //         : this.#colors.downCandlesTail
+  //     );
+  // }
+
+
   #createCandlesHigh() {
+    if (this.#chartMode !== 'candlestick') return;
 
     d3.selectAll(`#${this.#objectIDs.candleContainerId} .candle`)
       .append('rect')
       .attr('width', this.#config.candleTailWidth)
-      .attr('height', (d) => {
-
-        return d.Open > d.Close
+      .attr('height', (d) =>
+        d.Open > d.Close
           ? this.#yScaleFunc(d.Open) - this.#yScaleFunc(d.High)
-          : this.#yScaleFunc(d.Close) - this.#yScaleFunc(d.High);
-      })
-
+          : this.#yScaleFunc(d.Close) - this.#yScaleFunc(d.High)
+      )
       .attr(
         'x',
         (d) =>
@@ -433,7 +528,8 @@ class CandleStickChart {
   }
 
   #createCandlesLow() {
-    
+    if (this.#chartMode !== 'candlestick') return;
+
     d3.selectAll(`#${this.#objectIDs.candleContainerId} .candle`)
       .append('rect')
       .attr('width', this.#config.candleTailWidth)
@@ -478,7 +574,7 @@ class CandleStickChart {
 
     d3.select(`#${this.#objectIDs.toolsBtnsContainer}`)
       .selectAll()
-      .data([0, 1, 2, 3, 4]) // ← Added 4 here
+      .data([0, 1, 2, 3, 4, 5])
       .enter()
       .append('div')
       .attr('id', (d) => `tools-btn-${d}`)
@@ -552,6 +648,15 @@ class CandleStickChart {
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="${this.#colors.deActiveTools}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M4 7h16M4 12h8m-8 5h16"/>
     </svg>`;
+
+    document.querySelector(
+      `#${this.#objectIDs.toolsBtnsContainer} #tools-btn-5`
+    ).innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="${this.#colors.deActiveTools}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="4 17 10 11 14 15 20 9"/>
+      <path d="M21 20H3"/>
+    </svg>`;
+
 
   }
 
@@ -955,7 +1060,7 @@ class CandleStickChart {
         .attr('y1', location.y)
         .attr('x2', location.x)
         .attr('y2', location.y)
-        .attr('stroke', 'white')
+        .attr('stroke', this.#colors.lineColor)
         .attr('stroke-width', 1.5);
     } else {
 
@@ -966,7 +1071,7 @@ class CandleStickChart {
         .attr('y1', this.#drawPoint1.y)
         .attr('x2', this.#drawPoint2.x)
         .attr('y2', this.#drawPoint2.y)
-        .attr('stroke', 'white')
+        .attr('stroke', this.#colors.lineColor)
         .attr('stroke-width', 1.5);
 
       // Remove temp line
@@ -1068,26 +1173,33 @@ class CandleStickChart {
       .text(`${diff.toFixed(2)} (${percent}%) | ${numBars} bars | ${numDays} days`);
   }
 
-  #drawStaticAnnotationFromData() {
-    const data = this.#filteredData;
-    if (!data?.length) return;
+  _getAnnotationKey(d) {
+    return d.id ?? `${d.Date}_${d.Close}`;
+  }
   
-    const d = data[Math.floor(Math.random() * data.length)];
+  #drawStaticAnnotationFromData() {
+    const data = this.#annotationsData;
+
+    if (!data?.length) return;
+
     const parseTime = d => new Date(d);
     const formatTime = d3.timeFormat("%Y-%m-%d");
-  
+
     const customType = annotationCustomType(annotationCalloutCurve, {
       className: "custom",
       connector: {
         type: "elbow",
         end: "arrow",
-        curve: d3.curveBasis
+        // curve: d3.curveBasis
       },
       note: {
-        lineType: "horizontal"
+        align: "middle",
+        wrap: 150,
+        lineType: null,
+        line: []
       }
     });
-  
+
     const makeAnnotation = annotation()
       .editMode(true)
       .notePadding(15)
@@ -1100,44 +1212,45 @@ class CandleStickChart {
         Date: d => formatTime(this.#xScaleFunc.invert(d.x)),
         Close: d => this.#yScaleFunc.invert(d.y)
       })
-      .annotations([
-        {
-          note: {
-            title: `BUY ₹${d.Close.toFixed(2)}`,
-            label: `You bought X qty for this fking price 💸`,
-            align: "middle",
-            wrap: 150
-          },
-          data: d,
-          dx: 40,
-          dy: 100,
-          subject: {
-            radius: 20,
-            radiusPadding: 5
-          },
-          color: "#ffff",
-          connector: {
-            points: 1
-          },
-          disable: ["subject"]
-        }
-      ]);
-  
+      .annotations(
+        data.map(d => {
+
+          return {
+            note: {
+              title: d.title || `₹${d.Close}`,
+              label: d.label || '',
+              align: 'middle',
+              wrap: 150
+            },
+            data: d,
+            dx: 100,
+            dy: -50,
+            subject: {
+              radius: 20,
+              radiusPadding: 5
+            },
+            color: this.#colors.annotationLineColor,
+            // connector: {
+            //   points: 2
+            // },
+            disable: ['subject']
+          };
+        })
+      );
+
     const group = d3.select(`#${this.#objectIDs.candleContainerId}`)
+      .style("touch-action", "none") // critical for touch drag
       .append("g")
       .attr("class", "annotation-group")
-      .call(makeAnnotation);
-  
-    // 👇 Inline styling of font sizes
+      .call(makeAnnotation).raise();
+
     group.selectAll(".annotation-note-title")
       .style("font-size", "13px");
-  
+
     group.selectAll(".annotation-note-label")
       .style("font-size", "11px")
-      .style("fill", "#bbbbbb");
+      .style("fill", this.#colors.annotationTextColor);
   }
-  
-  
 
   #handleScrollZoom(e) {
 
@@ -1395,6 +1508,13 @@ class CandleStickChart {
       }
     );
 
+    d3.select(`#${this.#objectIDs.toolsBtnsContainer} #tools-btn-5`).on(
+      'click',
+      function (e, d) {
+        thisProxy.toggleChartMode();
+      }
+    );
+
 
     let zoom = d3.zoom().on('zoom', function (e) {
       thisProxy.#handleScrollZoom(e);
@@ -1510,7 +1630,6 @@ class CandleStickChart {
     if (document.getElementById(this.#objectIDs.svgId))
       document.getElementById(this.#objectIDs.svgId).remove();
   }
-
 
   draw() {
 

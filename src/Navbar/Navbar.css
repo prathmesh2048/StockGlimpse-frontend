@@ -61,4 +61,18 @@
       margin-bottom: 15px;
     }
   }
+  .navbar.solid {
+    background: linear-gradient(to top right, #01141a, #01222c);
+    color: black;
+    position: relative;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .navbar.solid .navbar-links {
+    color: #ffffff;
+  }
+  
+  .navbar.solid .navbar-links:hover {
+    color: #ff5722;
+  }
   

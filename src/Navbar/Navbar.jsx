@@ -4,10 +4,10 @@ import "./Navbar.css";  // Import the CSS
 import { getToken, clearToken } from '../utils/auth';
 import useUser from "../hooks/useUser";
 
-const Navbar = () => {
+const Navbar = ({ solidBackground = false }) => {
 
   const navigate = useNavigate();
-  
+
   const { user, loading } = useUser();
   if (loading) return <div>Loading...</div>;
 
@@ -20,7 +20,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${solidBackground ? "solid" : ""}`}>
       <div className="navbar-container">
         <a href="/" className="navbar-logo">
           Stock Glimpse

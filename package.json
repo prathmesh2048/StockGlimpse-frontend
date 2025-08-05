@@ -11,6 +11,7 @@
     "axios": "^1.9.0",
     "d3": "^7.9.0",
     "d3-svg-annotation": "^2.5.1",
+    "lucide-react": "^0.525.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-google-button": "^0.8.0",
@@ -22,7 +23,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "debug": "react-scripts start --inspect-brk"
   },
   "eslintConfig": {
     "extends": [
