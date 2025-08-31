@@ -5,6 +5,7 @@ import {
   annotationCustomType
 } from 'd3-svg-annotation';
 
+import { drawTradeGradientAreas } from './Utils.js';
 
 import { colors, config, getCursorPoint, parseDate } from './CandleStickChartUtils.js';
 
@@ -41,9 +42,10 @@ class CandleStickChart {
   #annotationsData = [];
   #theme = null;
   #annotationOverrides = new Map();
-  
+  #lineData = [];
+
   constructor(width, height, data, stockAnnotationsData, id, theme = "dark") {
-    console.log("logging data", data);
+
     this.#theme = theme
     this.#colors = colors(theme);
     this.#config = config(width, height);
@@ -73,6 +75,35 @@ class CandleStickChart {
     this.#annotationOverrides = this.#annotationOverrides || new Map();
 
   }
+
+  getChartMode() {
+    return this.#chartMode;
+  }
+
+  getAnnotationsData() {
+    return this.#annotationsData;
+  }
+
+  getObjectIDs() {
+    return this.#objectIDs;
+  }
+
+  getChartMode() {
+    return this.#chartMode;
+  }
+
+  getYScaleFunc() {
+    return this.#yScaleFunc;
+  }
+
+  getXScaleFunc() {
+    return this.#xScaleFunc;
+  }
+
+  getChartData() {
+    return this.#filteredData;
+  }
+
 
   setAnnotations(annotations) {
     this.#annotationsData = annotations;
@@ -570,7 +601,7 @@ class CandleStickChart {
         window.innerWidth > this.#config.mobileBreakPoint ? '20px' : '0'
       )
       .style('position', 'relative')
-      .style('z-index', '2');
+    // .style('z-index', '1');
 
     d3.select(`#${this.#objectIDs.toolsBtnsContainer}`)
       .selectAll()
@@ -688,6 +719,7 @@ class CandleStickChart {
     const activeSVG = document.querySelector(`${activeBtn} svg g g`) || document.querySelector(`${activeBtn} svg`);
     activeSVG?.setAttribute('fill', this.#colors.activeTools);
     d3.select(activeBtn).style('border', `1px solid ${this.#colors.activeTools}`);
+
   }
 
 
@@ -698,6 +730,7 @@ class CandleStickChart {
       this.#minMaxDate[1].getTime() + this.#candleWidthDate / 2;
     this.#filteredData = this.data;
     this.#zoomFactor = 1;
+    this.#removeAllLines();
     this.draw();
   }
 
@@ -932,6 +965,7 @@ class CandleStickChart {
   }
 
   #handleZoomBox() {
+
     let zoomBox1 = document.querySelector(`#${this.#objectIDs.zoomBoxId1}`);
     if (zoomBox1) zoomBox1.remove();
 
@@ -980,6 +1014,7 @@ class CandleStickChart {
       .attr('fill', 'black')
       .attr('stroke', 'none')
       .style('opacity', 0.5);
+
   }
 
   #handleZoom() {
@@ -1020,6 +1055,7 @@ class CandleStickChart {
     this.#zoomRange2 = newZoomRange2;
 
     this.#filteredData = filteredData;
+    this.#mode = 'pan';
     this.draw();
   }
 
@@ -1048,6 +1084,7 @@ class CandleStickChart {
   }
 
   #handleDrawLine(location) {
+
     if (this.#mode !== 'draw' || this.#drawAndMeasureLocked) return;
 
     const svg = d3.select(`#${this.#objectIDs.svgId}`);
@@ -1065,6 +1102,14 @@ class CandleStickChart {
     } else {
 
       this.#drawPoint2 = { x: location.x, y: location.y };
+
+      const lineData = {
+        x1: this.#xScaleFunc.invert(this.#drawPoint1.x),
+        y1: this.#yScaleFunc.invert(this.#drawPoint1.y),
+        x2: this.#xScaleFunc.invert(this.#drawPoint2.x),
+        y2: this.#yScaleFunc.invert(this.#drawPoint2.y),
+      };
+      this.#lineData.push(lineData);
 
       svg.append('line')
         .attr('x1', this.#drawPoint1.x)
@@ -1084,10 +1129,39 @@ class CandleStickChart {
         this.#drawPoint2 = null;
         this.#tempLine = null;
         this.#drawAndMeasureLocked = false;
+        this.#mode = 'pan';
       });
 
     }
   }
+
+  #redrawCachedLines() {
+
+    const svg = d3.select(`#${this.#objectIDs.svgId}`);
+
+    svg.selectAll('.line').remove();
+
+    d3.select(`#${this.#objectIDs.svgId}`)
+      .selectAll('.user-line')
+      .data(this.#lineData)
+      .enter()
+      .append('line')
+      .attr('class', 'user-line')
+      .attr('x1', d => this.#xScaleFunc(d.x1))
+      .attr('y1', d => this.#yScaleFunc(d.y1))
+      .attr('x2', d => this.#xScaleFunc(d.x2))
+      .attr('y2', d => this.#yScaleFunc(d.y2))
+      .attr('stroke', this.#colors.lineColor)
+      .attr('stroke-width', 1.5);
+  }
+
+  #removeAllLines() {
+
+    const svg = d3.select(`#${this.#objectIDs.svgId}`);
+    svg.selectAll('user-line').remove();
+    this.#lineData = [];
+  }
+
 
   #handleMeasure(location) {
 
@@ -1127,21 +1201,21 @@ class CandleStickChart {
         });
 
     } else {
+      console.log('Measure complete');
       // 🧠 Lock out trailing mousemove
       this.#drawAndMeasureLocked = true;
       d3.select(`#${this.#objectIDs.svgId}`).on('mousemove.measure', null);
 
-      // Reset in next frame
-      requestAnimationFrame(() => {
-        this.#measureState.start = null;
-        this.#measureState.rect = null;
-        this.#measureState.label = null;
-        this.#drawAndMeasureLocked = false;
-      });
+      this.#measureState.start = null;
+      this.#measureState.rect = null;
+      this.#measureState.label = null;
+      this.#drawAndMeasureLocked = false;
+      this.#mode = 'pan';
     }
   }
 
   #updateMeasureBox(current) {
+
     const { start, rect, label } = this.#measureState;
 
     const x = Math.min(start.x, current.x);
@@ -1155,6 +1229,16 @@ class CandleStickChart {
     const priceB = this.#yScaleFunc.invert(current.y);
     const diff = priceB - priceA;
     const percent = ((diff / priceA) * 100).toFixed(2);
+
+    const fillColor = priceB > priceA ? 'rgba(0,255,0,0.2)' : 'rgba(255,0,0,0.2)';
+    const strokeColor = priceB > priceA ? 'lime' : 'red';
+
+    rect.attr('x', x)
+      .attr('y', y)
+      .attr('width', width)
+      .attr('height', height)
+      .attr('fill', fillColor)
+      .attr('stroke', strokeColor);
 
     // 🔥 Get time-based data
     const timeA = this.#xScaleFunc.invert(start.x);
@@ -1173,10 +1257,7 @@ class CandleStickChart {
       .text(`${diff.toFixed(2)} (${percent}%) | ${numBars} bars | ${numDays} days`);
   }
 
-  _getAnnotationKey(d) {
-    return d.id ?? `${d.Date}_${d.Close}`;
-  }
-  
+
   #drawStaticAnnotationFromData() {
     const data = this.#annotationsData;
 
@@ -1190,7 +1271,6 @@ class CandleStickChart {
       connector: {
         type: "elbow",
         end: "arrow",
-        // curve: d3.curveBasis
       },
       note: {
         align: "middle",
@@ -1215,6 +1295,18 @@ class CandleStickChart {
       .annotations(
         data.map(d => {
 
+          const override = this.#annotationOverrides.get(d.id) || {};
+
+          // Quadrant logic
+          let dx, dy;
+          if (d.transactionType === "buy") {
+            dx = override.dx ?? -150; // bottom-left
+            dy = override.dy ?? 50;
+          } else {
+            dx = override.dx ?? 150;  // top-right
+            dy = override.dy ?? -50;
+          }
+
           return {
             note: {
               title: d.title || `₹${d.Close}`,
@@ -1223,26 +1315,31 @@ class CandleStickChart {
               wrap: 150
             },
             data: d,
-            dx: 100,
-            dy: -50,
+            dx,
+            dy,
             subject: {
               radius: 20,
               radiusPadding: 5
             },
             color: this.#colors.annotationLineColor,
-            // connector: {
-            //   points: 2
-            // },
             disable: ['subject']
           };
         })
-      );
+      ).on("dragend", ann => {
+        console.log("Annotation dragged:", ann);
+        this.#annotationOverrides.set(ann.data.id, { dx: ann.dx, dy: ann.dy });
+      });
 
     const group = d3.select(`#${this.#objectIDs.candleContainerId}`)
       .style("touch-action", "none") // critical for touch drag
+      .style("z-index", 100)
       .append("g")
       .attr("class", "annotation-group")
-      .call(makeAnnotation).raise();
+      .call(makeAnnotation)
+      .raise();
+
+
+    drawTradeGradientAreas(this, group);
 
     group.selectAll(".annotation-note-title")
       .style("font-size", "13px");
@@ -1472,7 +1569,6 @@ class CandleStickChart {
       }
     });
 
-
     d3.select(`#${this.#objectIDs.toolsBtnsContainer} #tools-btn-0`).on(
       'click',
       function (e, d) {
@@ -1649,6 +1745,7 @@ class CandleStickChart {
     this.#createCandlesLow();
     this.#addEvenetListeners();
     this.#drawStaticAnnotationFromData();
+    this.#redrawCachedLines();
 
   }
 

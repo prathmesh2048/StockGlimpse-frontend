@@ -9,6 +9,8 @@ import ResetPasswordPage from './Login/ResetPasswordPage';
 // import ChartScreen from './Chart/ChartScreen';
 import ChartScreen from './Chart/ChartScreen';
 import DashBoard from './ChartDashboards/Dashboard';
+import FileUpload from './Onboarding/FileUpload';
+import SelectBroker from './Onboarding/SelectBroker';
 
 function App() {
   return (
@@ -22,6 +24,8 @@ function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/temp" element={<DashBoard />} />
+          <Route path="/upload-file" element={<FileUpload />} />
+          <Route path="/select-broker" element={<SelectBroker />} />
         </Routes>
       </Router>
 

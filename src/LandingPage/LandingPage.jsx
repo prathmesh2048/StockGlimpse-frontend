@@ -6,7 +6,8 @@ import OneTapLogin from '../Login/oneTapLogin';
 import Navbar from '../Navbar/Navbar';
 import { getToken } from '../utils/auth';
 import useUser from '../hooks/useUser';
-
+import CTAButton from './CTAButton';
+import './LandingPage.css';
 
 const LandingPage = () => {
 
@@ -22,6 +23,11 @@ const LandingPage = () => {
       <HeroSection />
       <HowItWorks />
       {!isLoggedIn && <OneTapLogin />}
+      
+      <div className="cta-wrapper">
+        <CTAButton to="/select-broker">Try Free</CTAButton>
+      </div>
+      
       <Footer />
     </div>
   );

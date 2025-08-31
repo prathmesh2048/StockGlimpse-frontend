@@ -24,7 +24,7 @@ const HowItWorks = () => (
       <VisualizeIcon/>
     </div>
 
-    <div className="step-row">
+    <div className="step-row last-row">
       <AnalyzeIcon/>
       <div className="step-text">
         <h3>3. Analyze</h3>
