@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react'
 import './FileUpload.css'
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ENV from '../config';
 
@@ -26,6 +27,8 @@ const FileUpload = () => {
   const [fileName, setFileName] = useState('')
   const fileInputRef = useRef(null)
   const [error, setError] = useState('')
+
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     if (error) {
@@ -122,7 +125,13 @@ const FileUpload = () => {
           }
         }
       )
+
       console.log('response received:', res.data)
+      
+      if (res.data.success) {
+        navigate('/');   // ✅ redirect to home page
+      }
+
     } catch (err) {
       setError('Upload failed. Try again.')
     } finally {

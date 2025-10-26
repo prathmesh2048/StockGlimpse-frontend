@@ -51,10 +51,10 @@ const Navbar = ({ solidBackground = false }) => {
           ) : (
             <>
               <li className="navbar-item">
-                <a href="/profile" className="navbar-links">Welcome {user.first_name} {user.last_name}</a>
+                <a href="/profile" className="navbar-links">My Profile</a>
               </li>
               <li className="navbar-item">
-                <a href="/chart-screen" className="navbar-links">Charts</a>
+                <a href="/temp" className="navbar-links">Charts</a>
               </li>
               <li className="navbar-item">
                 <a onClick={handleSignout} href="/" className="navbar-links">

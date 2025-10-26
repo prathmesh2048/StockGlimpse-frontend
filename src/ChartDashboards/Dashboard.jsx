@@ -1,5 +1,5 @@
 import React from 'react';
-import ChartDashboard from './ChartDashboard';
+import ChartDashboard from './ChartDashboard_temp';
 import Navbar from '../Navbar/Navbar';
 
 export default function DashBoard() {

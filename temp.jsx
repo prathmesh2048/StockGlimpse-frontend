@@ -1,4 +1,3 @@
-// ChartDashboard.jsx (Fixed)
 import styles from './ChartDashboard.module.css';
 import React, {
   useRef,
