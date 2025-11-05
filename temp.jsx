@@ -109,13 +109,8 @@ export default function ChartDashboard() {
     {
       id: 'screen-1',
       name: 'Tech Stocks',
-      charts: ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'AMD'],
-    },
-    {
-      id: 'screen-2',
-      name: 'Energy & Finance',
-      charts: ['XOM', 'CVX', 'JPM', 'BAC'],
-    },
+      charts: ['AAPL'],
+    }
   ]);
 
   const [selectedScreenId, setSelectedScreenId] = useState(screens[0]?.id ?? null);

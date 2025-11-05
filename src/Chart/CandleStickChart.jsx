@@ -3,14 +3,13 @@ import {
   annotation,
   annotationLabel,
   annotationCalloutCurve,
-  annotationCustomType
+  annotationCustomType,
+  annotationCalloutRect
 } from 'd3-svg-annotation';
-
-import { RefreshCcw, Expand, Move, Minus, Ruler, BarChart3 } from "lucide-react";
 
 import { drawTradeGradientAreas } from './Utils.js';
 
-import { colors, config, getCursorPoint, parseDate } from './CandleStickChartUtils.js';
+import { colors, config, getCursorPoint, parseDate, modifyAnnotationEnd } from './CandleStickChartUtils.js';
 
 
 class CandleStickChart {
@@ -117,7 +116,7 @@ class CandleStickChart {
     this.#chartMode = this.#chartMode === 'candlestick' ? 'line' : 'candlestick';
     this.draw();
     d3.select("#tools-btn-5")
-    .html(this.#getChartTypeIcon());
+      .html(this.#getChartTypeIcon());
   }
 
   setData(newData) {
@@ -595,10 +594,10 @@ class CandleStickChart {
       return "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 4v16'/><path d='M4 8h4v8H4'/><path d='M12 2v20'/><path d='M10 6h4v12h-4'/><path d='M20 4v16'/><path d='M18 10h4v4h-4'/></svg>";
     } else {
       return "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 3v18h18'/><path d='M19 9l-5 5-4-4-6 6'/></svg>";
-      
+
     }
   }
-  
+
   #createToolsBtns() {
 
     d3.select(`#${this.#objectIDs.toolsBtnsContainer}`).remove();
@@ -1298,14 +1297,9 @@ class CandleStickChart {
       .raise();
 
 
-    drawTradeGradientAreas(this, group);
+    // drawTradeGradientAreas(this, group);
+    modifyAnnotationEnd(group, this.#colors);
 
-    group.selectAll(".annotation-note-title")
-      .style("font-size", "13px");
-
-    group.selectAll(".annotation-note-label")
-      .style("font-size", "11px")
-      .style("fill", this.#colors.annotationTextColor);
   }
 
   #handleScrollZoom(e) {

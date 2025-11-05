@@ -1,3 +1,7 @@
+import ReactDOMServer from 'react-dom/server';
+import * as d3 from 'd3';
+import NoteTextarea from './NoteTextArea';
+
 export const parseDate = (dateStr) => new Date(dateStr);
 
 export const getCursorPoint = (id, evt) => {
@@ -30,6 +34,92 @@ export const findFixedDataIndex = (dataPoint, data) => {
   }
   return index;
 };
+
+export const modifyAnnotationEnd = (group, colors) => {
+  group.selectAll(".annotation-note-title")
+    .style("font-size", "13px");
+
+  group.selectAll(".annotation-note-label")
+    .style("font-size", "11px")
+    .style("fill", colors.annotationTextColor);
+
+  // Add the "✏️ Notes" clickable text
+  group.selectAll(".annotation-note-label")
+    .append("tspan")
+    .attr("x", 0)
+    .attr("dy", "1.8em")
+    .attr("class", "annotation-add-note")
+    .style("font-size", "10px")
+    .style("fill", "#9aa0a6")
+    .style("cursor", "pointer")
+    .text("Notes ✏️")
+    .on("click", function (event, d) {
+
+      const noteGroup = d3.select(this.closest(".annotation-note-content"));
+
+      // remove existing
+      noteGroup.select(".note-textarea").remove();
+
+      const html = ReactDOMServer.renderToString(<NoteTextarea data={d} />);
+
+      const fo = noteGroup.append("foreignObject")
+        .attr("class", "note-textarea")
+        .attr("x", 0)
+        .attr("y", 40)
+        .attr("width", 400)
+        .attr("height", 280)
+        .html(`<div xmlns="http://www.w3.org/1999/xhtml">${html}</div>`);
+
+        fo.select("button[aria-label='Close']").on("click", () => fo.remove());
+
+    }
+    );
+
+
+  // .on("click", function (event, d) {
+  //   const parent = d3.select(this.parentNode);
+  //   const existingNote = parent.select(".trade-note");
+
+  //   if (!existingNote.empty()) {
+  //     existingNote.remove(); // toggle off
+  //     return;
+  //   }
+
+  //   parent.append("tspan")
+  //     .attr("x", 0)
+  //     .attr("dy", "1.3em")
+  //     .attr("class", "trade-note")
+  //     .style("font-size", "10px")
+  //     .style("fill", "#fbbc04")
+  //     .text("🗒 Add your note here...");
+  // });
+
+  // Style the annotation handle and add icon
+  d3.selectAll('.annotation .annotation-note .handle')
+    .attr('stroke-dasharray', null)
+    .each(function () {
+      const handle = d3.select(this);
+      const parent = d3.select(this.parentNode);
+
+      const cx = +handle.attr('cx');
+      const cy = +handle.attr('cy');
+
+      parent.append('image')
+        .attr('x', cx - 8)
+        .attr('y', cy - 8)
+        .attr('width', 16)
+        .attr('height', 16)
+        .attr(
+          'href',
+          d3.select(this.parentNode).datum().data.transactionType === "buy"
+            ? '/images/B.png'
+            : '/images/S.png'
+        )
+        .attr('pointer-events', 'none');
+    });
+};
+
+
 
 export const colors = (theme) => {
   return {

@@ -11,6 +11,7 @@ import React, {
 import axios from 'axios';
 import ENV from '../config';
 import CandleStickChart from '../Chart/CandleStickChart';
+import NoteTextarea from '../Chart/NoteTextArea';
 
 const Chart = ({ symbol }) => {
 
@@ -69,7 +70,8 @@ const Chart = ({ symbol }) => {
         priceData,
         annotations,
         chartRef.current.id,
-        theme
+        theme,
+        NoteTextarea
       );
     } else {
       chartInstance.current.setData(priceData);
@@ -147,7 +149,7 @@ export default function ChartDashboard() {
     {
       id: 'screen-1',
       name: 'Tech Stocks',
-      charts: ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'AMD'],
+      charts: ['AAPL'],
     },
     {
       id: 'screen-2',
