@@ -1287,6 +1287,7 @@ class CandleStickChart {
         console.log("Annotation dragged:", ann);
         this.#annotationOverrides.set(ann.data.id, { dx: ann.dx, dy: ann.dy });
       });
+      
 
     const group = d3.select(`#${this.#objectIDs.candleContainerId}`)
       .style("touch-action", "none") // critical for touch drag
@@ -1295,7 +1296,6 @@ class CandleStickChart {
       .attr("class", "annotation-group")
       .call(makeAnnotation)
       .raise();
-
 
     // drawTradeGradientAreas(this, group);
     modifyAnnotationEnd(group, this.#colors);
@@ -1417,7 +1417,7 @@ class CandleStickChart {
     }
   }
 
-  #addEvenetListeners() {
+  #addEventListeners() {
 
     let thisProxy = this;
 
@@ -1696,7 +1696,7 @@ class CandleStickChart {
     this.#createCandlesBody();
     this.#createCandlesHigh();
     this.#createCandlesLow();
-    this.#addEvenetListeners();
+    this.#addEventListeners();
     this.#drawStaticAnnotationFromData();
     this.#redrawCachedLines();
 

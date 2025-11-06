@@ -1,4 +1,6 @@
 import ReactDOMServer from 'react-dom/server';
+import ReactDOM from "react-dom/client";
+
 import * as d3 from 'd3';
 import NoteTextarea from './NoteTextArea';
 
@@ -36,6 +38,7 @@ export const findFixedDataIndex = (dataPoint, data) => {
 };
 
 export const modifyAnnotationEnd = (group, colors) => {
+
   group.selectAll(".annotation-note-title")
     .style("font-size", "13px");
 
@@ -54,45 +57,33 @@ export const modifyAnnotationEnd = (group, colors) => {
     .style("cursor", "pointer")
     .text("Notes ✏️")
     .on("click", function (event, d) {
-
       const noteGroup = d3.select(this.closest(".annotation-note-content"));
-
-      // remove existing
       noteGroup.select(".note-textarea").remove();
-
-      const html = ReactDOMServer.renderToString(<NoteTextarea data={d} />);
 
       const fo = noteGroup.append("foreignObject")
         .attr("class", "note-textarea")
-        .attr("x", 0)
+        .attr("x", 100)
         .attr("y", 40)
         .attr("width", 400)
-        .attr("height", 280)
-        .html(`<div xmlns="http://www.w3.org/1999/xhtml">${html}</div>`);
+        .attr("height", 300);
 
-        fo.select("button[aria-label='Close']").on("click", () => fo.remove());
+      const container = document.createElement("div");
+      fo.node().appendChild(container);
 
-    }
-    );
+      const root = ReactDOM.createRoot(container);
+      root.render(
+        <NoteTextarea
+          data={d}
+          onClose={() => fo.remove()}
+        />
+      );
 
-
-  // .on("click", function (event, d) {
-  //   const parent = d3.select(this.parentNode);
-  //   const existingNote = parent.select(".trade-note");
-
-  //   if (!existingNote.empty()) {
-  //     existingNote.remove(); // toggle off
-  //     return;
-  //   }
-
-  //   parent.append("tspan")
-  //     .attr("x", 0)
-  //     .attr("dy", "1.3em")
-  //     .attr("class", "trade-note")
-  //     .style("font-size", "10px")
-  //     .style("fill", "#fbbc04")
-  //     .text("🗒 Add your note here...");
-  // });
+      const foNode = fo.node();
+      ["wheel", "touchmove", "pointerdown"].forEach(evt =>
+        foNode.addEventListener(evt, e => e.stopPropagation(), { passive: true })
+      );
+      
+    });
 
   // Style the annotation handle and add icon
   d3.selectAll('.annotation .annotation-note .handle')
