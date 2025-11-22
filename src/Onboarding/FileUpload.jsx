@@ -3,11 +3,12 @@ import './FileUpload.css'
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ENV from '../config';
+import { filter } from 'd3';
 
 
 
 
-const FileUpload = () => {
+const FileUpload = ({onDataUpload}) => {
 
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 B'
@@ -16,6 +17,8 @@ const FileUpload = () => {
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
+
+  const uploadBtnRef = useRef(null)
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 
@@ -95,6 +98,9 @@ const FileUpload = () => {
     setFileSize(`${formatFileSize(file.size)} / ${formatFileSize(MAX_FILE_SIZE)}`)
     setFileName(file.name)
     setFileSelected(true)
+    setTimeout(() => {
+      uploadBtnRef.current?.click();
+    }, 0);
   }
 
 
@@ -127,11 +133,7 @@ const FileUpload = () => {
       )
 
       console.log('response received:', res.data)
-      
-      if (res.data.success) {
-        navigate('/');   // ✅ redirect to home page
-      }
-
+      onDataUpload(res.data);
     } catch (err) {
       setError('Upload failed. Try again.')
     } finally {
@@ -206,6 +208,7 @@ const FileUpload = () => {
           ) : (
             <button
               className="action-btn upload-btn"
+              ref={uploadBtnRef}
               onClick={handleUploadClick}
               title="Upload"
               disabled={isUploading}

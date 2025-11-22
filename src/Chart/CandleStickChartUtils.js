@@ -57,6 +57,9 @@ export const modifyAnnotationEnd = (group, colors) => {
     .style("cursor", "pointer")
     .text("Notes ✏️")
     .on("click", function (event, d) {
+
+      console.log("Note data:", d);
+
       const noteGroup = d3.select(this.closest(".annotation-note-content"));
       noteGroup.select(".note-textarea").remove();
 

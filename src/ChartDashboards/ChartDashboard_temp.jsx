@@ -48,7 +48,6 @@ const Chart = ({ symbol }) => {
     const { width, height } = chartRef.current.getBoundingClientRect();
 
     chartInstance.current.setConfig({ width, height });
-
     chartInstance.current.draw();
 
   }, []);

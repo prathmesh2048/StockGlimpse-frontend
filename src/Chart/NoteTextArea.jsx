@@ -1,15 +1,16 @@
 import React, { useState, useCallback, memo, useEffect } from "react";
+import axios from "axios";
+import ENV from "../config";
+
 
 const NoteTextarea = memo(({ data, onClose }) => {
+
   const [note, setNote] = useState("");
   const [isMobile, setIsMobile] = useState(false);
-  const [savedNotes, setSavedNotes] = useState([
-    "Bought at support, expecting bounce.",
-    "Sold after resistance break.",
-    "Watching for volume spike.",
-  ]);
+  const [savedNotes, setSavedNotes] = useState([]);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editingId, setEditingId] = useState(null);
 
-  // 🔹 Responsive handling
   useEffect(() => {
     const checkWidth = () => setIsMobile(window.innerWidth <= 600);
     checkWidth();
@@ -17,16 +18,83 @@ const NoteTextarea = memo(({ data, onClose }) => {
     return () => window.removeEventListener("resize", checkWidth);
   }, []);
 
+  // 🔹 Fetch notes from backend
+  useEffect(() => {
+    const fetchNotes = async () => {
+      try {
+        const res = await axios.get(`${ENV.BASE_API_URL}/api/notes/?stock=${data?.data?.symbol}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` },
+        });
+        setSavedNotes(res.data || []);
+      } catch (err) {
+        console.error("Fetch notes error:", err);
+      }
+    };
+    fetchNotes();
+  }, [data?.symbol]);
+
   const handleChange = useCallback((e) => setNote(e.target.value), []);
-  const handleCancel = useCallback(() => setNote(""), []);
-  const handleSave = useCallback(() => {
+
+  const handleUndo = useCallback(() => {
+    setNote("");
+    setEditingIndex(null);
+    setEditingId(null);
+  }, []);
+
+  // 🔹 Save or Update Note
+  const handleSave = useCallback(async () => {
     const trimmed = note.trim();
     if (!trimmed) return;
-    setSavedNotes((prev) => [trimmed, ...prev]);
-    setNote("");
-  }, [note]);
 
-  const handleNoteClick = useCallback((n) => setNote(n), []); // ✅ populate textarea
+    try {
+      if (editingId) {
+        const res = await axios.put(`${ENV.BASE_API_URL}/api/notes/${editingId}/`, {
+          content: trimmed,
+        }, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` },
+        });
+        setSavedNotes((prev) =>
+          prev.map((n) => (n.id === editingId ? res.data : n))
+        );
+      } else {
+        const res = await axios.post(`${ENV.BASE_API_URL}/api/notes/`, {
+          stock: data?.symbol,
+          content: trimmed,
+        }, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` },
+        })
+        setSavedNotes((prev) => [res.data, ...prev]);
+      }
+      setNote("");
+      setEditingIndex(null);
+      setEditingId(null);
+    } catch (err) {
+      console.error("Save note error:", err);
+    }
+  }, [note, editingId, data?.symbol]);
+
+  // 🔹 Edit
+  const handleNoteClick = useCallback((n, i) => {
+    setNote(n.content);
+    setEditingIndex(i);
+    setEditingId(n.id);
+  }, []);
+
+  // 🔹 Delete
+  const handleDelete = useCallback(
+    async (index) => {
+      const noteToDelete = savedNotes[index];
+      try {
+        await axios.delete(`${ENV.BASE_API_URL}/api/notes/${noteToDelete.id}/`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` },
+        });
+        setSavedNotes((prev) => prev.filter((_, i) => i !== index));
+      } catch (err) {
+        console.error("Delete note error:", err);
+      }
+    },
+    [savedNotes]
+  );
 
   const dynamic = getDynamicStyles(isMobile);
 
@@ -37,20 +105,15 @@ const NoteTextarea = memo(({ data, onClose }) => {
       onTouchMove={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Header */}
       <div style={{ ...styles.header, ...dynamic.header }}>
-        <span style={styles.title}>Add Note</span>
-        <button
-          type="button"
-          onClick={onClose}
-          style={styles.closeButton}
-          aria-label="Close"
-        >
+        <span style={styles.title}>
+          {editingIndex !== null ? "Edit Note" : "Add Note"}
+        </span>
+        <button type="button" onClick={onClose} style={styles.closeButton}>
           <CloseIcon />
         </button>
       </div>
 
-      {/* Textarea */}
       <textarea
         placeholder="Add your notes here"
         value={note}
@@ -59,14 +122,13 @@ const NoteTextarea = memo(({ data, onClose }) => {
         rows={isMobile ? 4 : 3}
       />
 
-      {/* Buttons */}
       <div style={{ ...styles.buttonRow, ...dynamic.buttonRow }}>
         <button
           type="button"
-          style={{ ...styles.button, ...styles.cancelBtn }}
-          onClick={handleCancel}
+          style={{ ...styles.button, ...styles.undoBtn }}
+          onClick={handleUndo}
         >
-          Cancel
+          Undo
         </button>
         <button
           type="button"
@@ -78,23 +140,39 @@ const NoteTextarea = memo(({ data, onClose }) => {
           onClick={handleSave}
           disabled={!note.trim()}
         >
-          Save
+          {editingIndex !== null ? "Update" : "Save"}
         </button>
       </div>
 
-      {/* History */}
       <div style={{ ...styles.history, ...dynamic.history }}>
         {savedNotes.length === 0 ? (
           <div style={styles.emptyText}>No notes yet.</div>
         ) : (
           savedNotes.map((n, i) => (
             <div
-              className="note-item"
-              key={i}
-              style={styles.noteItem}
-              onClick={() => handleNoteClick(n)} // ✅ working click
+              key={n.id || i}
+              style={{
+                ...styles.noteItem,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
             >
-              {n}
+              <div
+                onClick={() => handleNoteClick(n, i)}
+                style={{ flex: 1, cursor: "pointer" }}
+              >
+                {n.content}
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(i);
+                }}
+                style={styles.deleteBtn}
+              >
+                x
+              </button>
             </div>
           ))
         )}
@@ -102,6 +180,9 @@ const NoteTextarea = memo(({ data, onClose }) => {
     </div>
   );
 });
+
+// CloseIcon, styles, and getDynamicStyles stay the same
+
 
 const CloseIcon = memo(() => (
   <svg
@@ -135,6 +216,8 @@ const CloseIcon = memo(() => (
 
 const styles = {
   container: {
+    resize: "both",
+    overflow: "auto",
     fontFamily: "'Inter', 'Segoe UI', sans-serif",
     backgroundColor: "rgba(34, 38, 45, 0.95)",
     borderRadius: 8,
@@ -191,7 +274,7 @@ const styles = {
     fontWeight: 600,
     transition: "opacity 0.2s ease",
   },
-  cancelBtn: {
+  undoBtn: {
     backgroundColor: "rgba(55, 60, 70, 0.9)",
     color: "#8a919e",
   },
@@ -215,6 +298,16 @@ const styles = {
     borderLeft: "3px solid #5a606b",
     cursor: "pointer",
   },
+  deleteBtn: {
+    background: "rgba(255, 60, 60, 0.0)",
+    color: "#fff",
+    border: "none",
+    borderRadius: 4,
+    padding: "2px 6px",
+    cursor: "pointer",
+    fontSize: 11,
+    marginLeft: 6,
+  },
   emptyText: {
     textAlign: "center",
     color: "#6c7680",
@@ -226,16 +319,16 @@ const styles = {
 const getDynamicStyles = (isMobile) =>
   isMobile
     ? {
-        container: {
-          width: "92vw",
-          padding: "10px 12px",
-          borderRadius: 10,
-        },
-        header: { marginBottom: 8 },
-        textarea: { fontSize: 14, minHeight: 80 },
-        buttonRow: { marginTop: 8, justifyContent: "space-between" },
-        history: { maxHeight: 120 },
-      }
+      container: {
+        width: "92vw",
+        padding: "10px 12px",
+        borderRadius: 10,
+      },
+      header: { marginBottom: 8 },
+      textarea: { fontSize: 14, minHeight: 80 },
+      buttonRow: { marginTop: 8, justifyContent: "space-between" },
+      history: { maxHeight: 120 },
+    }
     : {};
 
 export default NoteTextarea;
