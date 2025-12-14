@@ -1,34 +1,38 @@
-// ChartDashboard.jsx (Fixed with Resize Handling on Collapse)
+// ChartDashboard.jsx
 import styles from './ChartDashboard.module.css';
 import React, {
   useRef,
   useEffect,
   useCallback,
   useState,
-  useMemo,
-  useId
+  useMemo
 } from 'react';
 import axios from 'axios';
 import ENV from '../config';
 import CandleStickChart from '../Chart/CandleStickChart';
 import NoteTextarea from '../Chart/NoteTextArea';
 
-const Chart = ({ symbol }) => {
-
+/* ----------------------------------------------------
+   Chart Component
+---------------------------------------------------- */
+const Chart = ({ symbol, symbolData }) => {
   const chartRef = useRef();
   const chartInstance = useRef(null);
-  const [priceData, setPriceData] = useState([]);
-  const [annotations, setAnnotations] = useState([]);
-  const [theme, setTheme] = useState("dark");
 
+  const [priceData, setPriceData] = useState(symbolData?.prices ?? []);
+  const [annotations, setAnnotations] = useState(symbolData?.annotations ?? []);
+  const [theme] = useState("dark");
+
+  // Fetch ONLY if NOT preloaded
   useEffect(() => {
+    if (symbolData) return;
+
     const fetchStockData = async () => {
       try {
         const response = await axios.get(`${ENV.BASE_API_URL}/stock/${symbol}/`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('jwtToken')}`,
-          },
+          headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` }
         });
+
         setPriceData(response.data.prices);
         setAnnotations(response.data.annotations);
       } catch (err) {
@@ -37,30 +41,15 @@ const Chart = ({ symbol }) => {
     };
 
     fetchStockData();
-  }, [symbol]);
+  }, [symbol, symbolData]);
 
-  const resizeChart = useCallback(() => {
-
-    if (!chartRef.current || !chartInstance.current) return;
-
-    // chartRef.current.innerHTML = '';
-
-    const { width, height } = chartRef.current.getBoundingClientRect();
-
-    chartInstance.current.setConfig({ width, height });
-    chartInstance.current.draw();
-
-  }, []);
-
+  // Init + Update Chart
   useEffect(() => {
-
     if (!chartRef.current || priceData.length === 0) return;
 
-    if (!chartRef.current.id) {
-      chartRef.current.id = `chart-${symbol}`;
-    }
-
     const { width, height } = chartRef.current.getBoundingClientRect();
+    const id = chartRef.current.id || `chart-${symbol}`;
+    chartRef.current.id = id;
 
     if (!chartInstance.current) {
       chartInstance.current = new CandleStickChart(
@@ -68,112 +57,118 @@ const Chart = ({ symbol }) => {
         height,
         priceData,
         annotations,
-        chartRef.current.id,
+        id,
         theme,
         NoteTextarea
       );
     } else {
       chartInstance.current.setData(priceData);
       chartInstance.current.setAnnotations(annotations);
-      chartInstance.current.draw();
     }
 
-    chartInstance.current.draw(); // imp to ensure the chart is drawn after setting data
+    chartInstance.current.draw();
+  }, [priceData, annotations]);
 
-    window.addEventListener("resize", resizeChart);
-    return () => window.removeEventListener("resize", resizeChart);
-  }, [priceData, annotations, resizeChart]);
+  // Resize
+  const resizeChart = useCallback(() => {
+    if (!chartRef.current || !chartInstance.current) return;
+    const { width, height } = chartRef.current.getBoundingClientRect();
+
+    chartInstance.current.setConfig({ width, height });
+    chartInstance.current.draw();
+  }, []);
 
   useEffect(() => {
-    resizeChart();
+    window.addEventListener("resize", resizeChart);
+    return () => window.removeEventListener("resize", resizeChart);
   }, [resizeChart]);
 
   return (
     <div className={`${styles.chart} ${styles[theme]}`}>
       <div
-        className="chart-div"
-        style={{
-          width: '100%',
-          height: 'inherit',
-          padding: '0',
-          margin: '0',
-          boxSizing: 'border-box',
-          border: 'none',
-          outline: 'none',
-        }}
         ref={chartRef}
+        style={{
+          width: "100%",
+          height: "inherit",
+          padding: 0,
+          margin: 0,
+          boxSizing: "border-box"
+        }}
       />
     </div>
   );
 };
 
-const ChartScreen = React.memo(({ screen, viewMode }) => {
-  const chartsToShow = useMemo(
-    () => (viewMode === 'grid-2x2' ? screen.charts.slice(0, 4) : screen.charts),
-    [screen.charts, viewMode]
-  );
+/* ----------------------------------------------------
+   Single Screen Component (NO multi-screen logic)
+---------------------------------------------------- */
+const ChartScreen = React.memo(({ symbols, symbolDataMap, viewMode }) => {
+  const chartsToShow = useMemo(() => {
+    return viewMode === "grid-2x2"
+      ? symbols.slice(0, 4)
+      : symbols;
+  }, [symbols, viewMode]);
 
   const containerClassName = useMemo(() => {
     switch (viewMode) {
-      case '1-per-row':
+      case "1-per-row":
         return styles.chartsContainerOnePerRow;
-      case '2-per-row':
+      case "2-per-row":
         return styles.chartsContainerTwoPerRow;
-      case 'grid-2x2':
+      case "grid-2x2":
         return styles.chartsContainerGrid2x2;
       default:
         return styles.chartsContainerOnePerRow;
     }
   }, [viewMode]);
 
-  if (chartsToShow.length === 0) {
-    return (
-      <p className={styles.noChartsMsg} role="alert">
-        No charts in this screen.
-      </p>
-    );
-  }
+  if (chartsToShow.length === 0)
+    return <p className={styles.noChartsMsg}>No charts available.</p>;
 
   return (
-    <section className={containerClassName} aria-label={`Charts in ${screen.name}`}>
+    <section className={containerClassName}>
       {chartsToShow.map((symbol) => (
-        <Chart key={symbol} symbol={symbol} />
+        <Chart
+          key={symbol}
+          symbol={symbol}
+          symbolData={symbolDataMap[symbol]}
+        />
       ))}
     </section>
   );
 });
 
-export default function ChartDashboard() {
-  const [screens, setScreens] = useState([
-    {
-      id: 'screen-1',
-      name: 'Tech Stocks',
-      charts: ['AAPL'],
-    },
-    {
-      id: 'screen-2',
-      name: 'Energy & Finance',
-      charts: ['XOM', 'CVX', 'JPM', 'BAC'],
-    },
-  ]);
+/* ----------------------------------------------------
+   ChartDashboard
+---------------------------------------------------- */
+export default function ChartDashboard({ preloadedData }) {
 
-  const [selectedScreenId, setSelectedScreenId] = useState(screens[0]?.id ?? null);
-  const [viewMode, setViewMode] = useState('1-per-row');
 
-  const selectedScreen = useMemo(
-    () => screens.find((screen) => screen.id === selectedScreenId) ?? null,
-    [screens, selectedScreenId]
+  const symbols = useMemo(
+    () => preloadedData?.map(d => d.symbol) ?? [],
+    [preloadedData]
   );
+
+  const symbolDataMap = useMemo(() => {
+    const map = {};
+    preloadedData?.forEach(d => {
+      map[d.symbol] = d;
+    });
+    return map;
+  }, [preloadedData]);
+
+  const [viewMode, setViewMode] = useState("1-per-row");
 
   return (
     <div className={styles.dashboardContainer}>
       <main className={styles.mainArea}>
+
+        {/* Header */}
         <header className={styles.mainHeader}>
-          <h1 className={styles.mainTitle}>
-            {selectedScreen ? selectedScreen.name : 'No screen selected'}
-          </h1>
+          <h1 className={styles.mainTitle}>Charts</h1>
+
           <div className={styles.viewModeSelector}>
-            <label className={styles.viewModeLabel}>View mode:</label>
+            <label>View mode:</label>
             <select
               value={viewMode}
               onChange={(e) => setViewMode(e.target.value)}
@@ -186,11 +181,12 @@ export default function ChartDashboard() {
           </div>
         </header>
 
-        {selectedScreen ? (
-          <ChartScreen screen={selectedScreen} viewMode={viewMode} />
-        ) : (
-          <p className={styles.noScreenSelectedMsg}>Select or create a chart screen.</p>
-        )}
+        {/* Chart Screen */}
+        <ChartScreen
+          symbols={symbols}
+          symbolDataMap={symbolDataMap}
+          viewMode={viewMode}
+        />
       </main>
     </div>
   );

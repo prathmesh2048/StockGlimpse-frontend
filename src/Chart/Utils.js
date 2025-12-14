@@ -84,3 +84,36 @@ export function drawTradeGradientAreas(ctx, group) {
             .text(`${profit >= 0 ? '+' : '-'} ${((profit / buy.Close) * 100).toFixed(2)}%  ( ₹${Math.abs(profit.toFixed(2))} )`);
     }
 }
+
+export function placeWithoutOverlap(newAnn, existing) {
+    let dx = newAnn.dx;
+    let dy = newAnn.dy;
+  
+    const step = 25;   // how much to push until it clears
+    let tries = 0;
+  
+    while (tries < 20) {
+      const newBox = {
+        x: newAnn.x + dx,
+        y: newAnn.y + dy,
+        w: 150,
+        h: 60
+      };
+  
+      const collides = existing.some(b =>
+        !(newBox.x > b.x + b.w ||
+          newBox.x + newBox.w < b.x ||
+          newBox.y > b.y + b.h ||
+          newBox.y + newBox.h < b.y)
+      );
+  
+      if (!collides) return { dx, dy };
+  
+      dx += step;  // try spaced horizontal shift
+      dy += step;  // try spaced vertical shift
+      tries++;
+    }
+  
+    return { dx, dy };
+  }
+  

@@ -18,9 +18,13 @@ import { useEffect } from "react";
 import { visuallyHidden } from "@mui/utils";
 import ENV from '../config';
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 
 export default function Table({ data, title = "Data Table" }) {
+
+  const navigate = useNavigate();
+
   const [order, setOrder] = useState("asc");
   const [orderBy, setOrderBy] = useState(Object.keys(data?.[0] || {})[0] || "");
   const [selected, setSelected] = useState([]);
@@ -71,7 +75,7 @@ export default function Table({ data, title = "Data Table" }) {
       );
 
       console.log("saved:", res.data);
-      // navigate("/dashboard");  <-- your navigation here
+      navigate("/temp", { state: res.data });
     } catch (err) {
       console.error(err);
     }

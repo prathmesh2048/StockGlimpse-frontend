@@ -7,10 +7,8 @@ import {
   annotationCalloutRect
 } from 'd3-svg-annotation';
 
-import { drawTradeGradientAreas } from './Utils.js';
-
 import { colors, config, getCursorPoint, parseDate, modifyAnnotationEnd } from './CandleStickChartUtils.js';
-
+import { placeWithoutOverlap } from './Utils';
 
 class CandleStickChart {
 
@@ -610,6 +608,7 @@ class CandleStickChart {
       .attr('id', this.#objectIDs.toolsBtnsContainer)
       .style('display', 'flex')
       .style('height', '40px')
+      .style('pointer-events', 'none')
       .style('justify-content', 'end')
       .style('gap', '10px')
       .style(
@@ -639,6 +638,7 @@ class CandleStickChart {
         .style('border-radius', '4px')
         .style('cursor', 'pointer')
         .style('display', 'flex')
+        .style('pointer-events', 'auto')
         .style('justify-content', 'center')
         .style('align-items', 'center')
         .style('position', 'relative')
@@ -1238,6 +1238,8 @@ class CandleStickChart {
       }
     });
 
+    const tempPlacedBoxes = [];
+
     const makeAnnotation = annotation()
       .editMode(true)
       .notePadding(15)
@@ -1255,15 +1257,30 @@ class CandleStickChart {
 
           const override = this.#annotationOverrides.get(d.id) || {};
 
-          // Quadrant logic
           let dx, dy;
-          if (d.transactionType === "buy") {
-            dx = override.dx ?? -150; // bottom-left
-            dy = override.dy ?? 50;
+          if (override.dx !== undefined) {
+            dx = override.dx;
+            dy = override.dy;
           } else {
-            dx = override.dx ?? 150;  // top-right
-            dy = override.dy ?? -50;
+            // base offsets
+            dx = d.transactionType === "buy" ? -150 : 150;
+            dy = d.transactionType === "buy" ? 50 : -50;
+
+            // get anchor position on chart
+            const ax = this.#xScaleFunc(parseTime(d.Date));
+            const ay = this.#yScaleFunc(d.Close);
+
+            // resolve overlap with previous annotations
+            const prev = tempPlacedBoxes;
+            const resolved = placeWithoutOverlap({ x: ax, y: ay, dx, dy }, prev);
+
+            dx = resolved.dx;
+            dy = resolved.dy;
+
+            // store box for next iterations
+            tempPlacedBoxes.push({ x: ax + dx, y: ay + dy, w: 150, h: 60 });
           }
+
 
           return {
             note: {
@@ -1287,7 +1304,7 @@ class CandleStickChart {
         console.log("Annotation dragged:", ann);
         this.#annotationOverrides.set(ann.data.id, { dx: ann.dx, dy: ann.dy });
       });
-      
+
 
     const group = d3.select(`#${this.#objectIDs.candleContainerId}`)
       .style("touch-action", "none") // critical for touch drag
