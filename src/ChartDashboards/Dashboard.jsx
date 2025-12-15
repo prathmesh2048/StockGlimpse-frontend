@@ -4,12 +4,13 @@ import Navbar from '../Navbar/Navbar';
 import { useLocation } from "react-router-dom";
 
 export default function DashBoard() {
-  const { state: preloadedData } = useLocation();
+
+  const { state } = useLocation();
 
   return (
     <>
       <Navbar solidBackground={true} />
-      <ChartDashboard preloadedData={preloadedData} />
+      <ChartDashboard tradesBySymbol={state.tradesBySymbol} />
     </>
   );
 }

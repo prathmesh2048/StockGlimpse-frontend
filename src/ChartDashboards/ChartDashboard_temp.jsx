@@ -11,69 +11,105 @@ import axios from 'axios';
 import ENV from '../config';
 import CandleStickChart from '../Chart/CandleStickChart';
 import NoteTextarea from '../Chart/NoteTextArea';
+import { Puff } from "react-loader-spinner";
 
 /* ----------------------------------------------------
    Chart Component
 ---------------------------------------------------- */
-const Chart = ({ symbol, symbolData }) => {
-  const chartRef = useRef();
+const Chart = ({ symbol, trades, onReady }) => {
+  const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
-  const [priceData, setPriceData] = useState(symbolData?.prices ?? []);
-  const [annotations, setAnnotations] = useState(symbolData?.annotations ?? []);
-  const [theme] = useState("dark");
+  const [priceData, setPriceData] = useState([]);
+  const [annotations, setAnnotations] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch ONLY if NOT preloaded
+  const theme = "dark";
+
+  // ✅ STABLE chart id (no randomness)
+  const chartId = useMemo(() => `chart-${symbol}`, [symbol]);
+
+  // ✅ STABILIZE trades to avoid ref-change fetch loops
+  const stableTrades = useMemo(
+    () => JSON.stringify(trades ?? []),
+    [trades]
+  );
+
+  /* ---------------- Fetch data ---------------- */
   useEffect(() => {
-    if (symbolData) return;
+    let cancelled = false;
 
     const fetchStockData = async () => {
       try {
-        const response = await axios.get(`${ENV.BASE_API_URL}/stock/${symbol}/`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` }
-        });
+        setLoading(true);
 
-        setPriceData(response.data.prices);
-        setAnnotations(response.data.annotations);
+        const res = await axios.post(
+          `${ENV.BASE_API_URL}/api/visualize/`,
+          JSON.parse(stableTrades),
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+
+        if (cancelled) return;
+
+        setPriceData(res.data.prices);
+        setAnnotations(res.data.annotations);
       } catch (err) {
-        console.error(`Error fetching data for ${symbol}:`, err);
+        console.error(`Error fetching ${symbol}`, err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
 
-    fetchStockData();
-  }, [symbol, symbolData]);
+    if (trades?.length) fetchStockData();
 
-  // Init + Update Chart
+    return () => {
+      cancelled = true;
+    };
+  }, [symbol, stableTrades]);
+
   useEffect(() => {
-    if (!chartRef.current || priceData.length === 0) return;
+    if (loading || !chartRef.current || priceData.length === 0) return;
 
-    const { width, height } = chartRef.current.getBoundingClientRect();
-    const id = chartRef.current.id || `chart-${symbol}`;
-    chartRef.current.id = id;
+    const draw = () => {
+      const { width, height } = chartRef.current.getBoundingClientRect();
+      chartRef.current.id = chartId;
 
-    if (!chartInstance.current) {
-      chartInstance.current = new CandleStickChart(
-        width,
-        height,
-        priceData,
-        annotations,
-        id,
-        theme,
-        NoteTextarea
-      );
-    } else {
-      chartInstance.current.setData(priceData);
-      chartInstance.current.setAnnotations(annotations);
-    }
+      if (!chartInstance.current) {
+        chartInstance.current = new CandleStickChart(
+          width,
+          height,
+          priceData,
+          annotations,
+          chartId,
+          theme,
+          NoteTextarea
+        );
+      } else {
+        chartInstance.current.clear?.();
+        chartInstance.current.setData(priceData);
+        chartInstance.current.setAnnotations(annotations);
+      }
 
-    chartInstance.current.draw();
-  }, [priceData, annotations]);
+      chartInstance.current.draw();
+      onReady?.(); // keep this
+    };
 
-  // Resize
+    requestAnimationFrame(() => {
+      requestAnimationFrame(draw);
+    });
+  }, [loading, priceData, annotations, chartId]);
+
+
+  /* ---------------- Resize ---------------- */
   const resizeChart = useCallback(() => {
     if (!chartRef.current || !chartInstance.current) return;
-    const { width, height } = chartRef.current.getBoundingClientRect();
 
+    const { width, height } = chartRef.current.getBoundingClientRect();
     chartInstance.current.setConfig({ width, height });
     chartInstance.current.draw();
   }, []);
@@ -83,31 +119,55 @@ const Chart = ({ symbol, symbolData }) => {
     return () => window.removeEventListener("resize", resizeChart);
   }, [resizeChart]);
 
+  /* ---------------- Cleanup ---------------- */
+  useEffect(() => {
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy?.();
+        chartInstance.current = null;
+      }
+    };
+  }, []);
+
   return (
-    <div className={`${styles.chart} ${styles[theme]}`}>
-      <div
-        ref={chartRef}
-        style={{
-          width: "100%",
-          height: "inherit",
-          padding: 0,
-          margin: 0,
-          boxSizing: "border-box"
-        }}
-      />
-    </div>
+    <>
+      <h1>{symbol}</h1>
+      <div className={`${styles.chart} ${styles[theme]}`}>
+        {loading && (
+          <div className={styles.chartLoader}>
+            <Puff
+              color="#6366F1"
+              size={60}
+              ariaLabel="loading"
+            />
+          </div>
+        )}
+
+        <div
+          ref={chartRef}
+          style={{
+            width: "100%",
+            height: "inherit",
+            display: loading ? "none" : "block"
+          }}
+        />
+      </div>
+    </>
   );
 };
 
+
 /* ----------------------------------------------------
-   Single Screen Component (NO multi-screen logic)
+   Chart Screen
 ---------------------------------------------------- */
-const ChartScreen = React.memo(({ symbols, symbolDataMap, viewMode }) => {
+const ChartScreen = React.memo(({ symbols, tradesBySymbol, viewMode }) => {
+
+  const [renderCount, setRenderCount] = useState(1);
+
   const chartsToShow = useMemo(() => {
-    return viewMode === "grid-2x2"
-      ? symbols.slice(0, 4)
-      : symbols;
-  }, [symbols, viewMode]);
+    const list = viewMode === "grid-2x2" ? symbols.slice(0, 4) : symbols;
+    return list.slice(0, renderCount);
+  }, [symbols, viewMode, renderCount]);
 
   const containerClassName = useMemo(() => {
     switch (viewMode) {
@@ -127,11 +187,12 @@ const ChartScreen = React.memo(({ symbols, symbolDataMap, viewMode }) => {
 
   return (
     <section className={containerClassName}>
-      {chartsToShow.map((symbol) => (
+      {chartsToShow.map(symbol => (
         <Chart
           key={symbol}
           symbol={symbol}
-          symbolData={symbolDataMap[symbol]}
+          trades={tradesBySymbol[symbol]}
+          onReady={() => setRenderCount(c => c + 1)}
         />
       ))}
     </section>
@@ -141,29 +202,17 @@ const ChartScreen = React.memo(({ symbols, symbolDataMap, viewMode }) => {
 /* ----------------------------------------------------
    ChartDashboard
 ---------------------------------------------------- */
-export default function ChartDashboard({ preloadedData }) {
-
-
+export default function ChartDashboard({ tradesBySymbol }) {
   const symbols = useMemo(
-    () => preloadedData?.map(d => d.symbol) ?? [],
-    [preloadedData]
+    () => Object.keys(tradesBySymbol),
+    [tradesBySymbol]
   );
-
-  const symbolDataMap = useMemo(() => {
-    const map = {};
-    preloadedData?.forEach(d => {
-      map[d.symbol] = d;
-    });
-    return map;
-  }, [preloadedData]);
 
   const [viewMode, setViewMode] = useState("1-per-row");
 
   return (
     <div className={styles.dashboardContainer}>
       <main className={styles.mainArea}>
-
-        {/* Header */}
         <header className={styles.mainHeader}>
           <h1 className={styles.mainTitle}>Charts</h1>
 
@@ -181,10 +230,9 @@ export default function ChartDashboard({ preloadedData }) {
           </div>
         </header>
 
-        {/* Chart Screen */}
         <ChartScreen
           symbols={symbols}
-          symbolDataMap={symbolDataMap}
+          tradesBySymbol={tradesBySymbol}
           viewMode={viewMode}
         />
       </main>

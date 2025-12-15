@@ -57,31 +57,25 @@ export default function Table({ data, title = "Data Table" }) {
     );
   };
 
-  const handleContinue = async () => {
+  const handleContinue = () => {
     const selectedRows = selected.map(idx => data[idx]);
+  
+    console.log("Selected Rows:", selectedRows);
+    
+    const tradesBySymbol = selectedRows.reduce((acc, row) => {
+      if (!acc[row.symbol]) acc[row.symbol] = [];
+      acc[row.symbol].push(row);
+      return acc;
+    }, {});
+  
+    console.log("Navigating to dashboard with tradesBySymbol:", tradesBySymbol);
 
-    console.log("sending:", selectedRows); // verify
-
-    try {
-      const res = await axios.post(
-        `${ENV.BASE_API_URL}/api/visualize/`,
-        selectedRows,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
-            "Content-Type": "application/json"
-          }
-        }
-      );
-
-      console.log("saved:", res.data);
-      navigate("/temp", { state: res.data });
-    } catch (err) {
-      console.error(err);
-    }
+    navigate("/temp", {
+      state: { tradesBySymbol }
+    });
   };
-
-
+  
+  
   const comparator = (a, b) => {
     const x = a[orderBy] ?? "";
     const y = b[orderBy] ?? "";

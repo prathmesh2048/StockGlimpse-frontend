@@ -221,7 +221,8 @@
   font-size: 1.1rem;
   user-select: none;
   min-height: 200px;
-  height: 70vh;
+  height: 420px;
+  min-height: 420px;
   flex: 1;
   position: relative;
   width: 100%;
