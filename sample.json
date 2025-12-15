@@ -1,0 +1,170 @@
+{
+  "NIFTYBEES": [
+    {
+      "symbol": "NIFTYBEES",
+      "isin": "INF204KB14I2",
+      "trade_date": "2025-07-31",
+      "exchange": "NSE",
+      "segment": "EQ",
+      "series": "EQ",
+      "trade_type": "buy",
+      "auction": "false",
+      "quantity": "17.000000",
+      "price": "278.450000",
+      "trade_id": "401815820",
+      "order_id": "1200000015927421",
+      "order_execution_time": "2025-07-31T10:01:33"
+    }
+  ],
+  "NEXT50IETF": [
+    {
+      "symbol": "NEXT50IETF",
+      "isin": "INF109KC1NS5",
+      "trade_date": "2025-07-31",
+      "exchange": "BSE",
+      "segment": "EQ",
+      "series": "B",
+      "trade_type": "buy",
+      "auction": "false",
+      "quantity": "71.000000",
+      "price": "70.060000",
+      "trade_id": "1924000",
+      "order_id": "1753935290989780659",
+      "order_execution_time": "2025-07-31T10:01:56"
+    }
+  ],
+  "CUMMINSIND": [
+    {
+      "symbol": "CUMMINSIND",
+      "isin": "INE298A01020",
+      "trade_date": "2025-08-08",
+      "exchange": "BSE",
+      "segment": "EQ",
+      "series": "A",
+      "trade_type": "sell",
+      "auction": "false",
+      "quantity": "2.000000",
+      "price": "3799.100000",
+      "trade_id": "4987900",
+      "order_id": "1754627618040635891",
+      "order_execution_time": "2025-08-08T10:23:12"
+    }
+  ],
+  "MAXHEALTH": [
+    {
+      "symbol": "MAXHEALTH",
+      "isin": "INE027H01010",
+      "trade_date": "2025-08-08",
+      "exchange": "NSE",
+      "segment": "EQ",
+      "series": "EQ",
+      "trade_type": "buy",
+      "auction": "false",
+      "quantity": "6.000000",
+      "price": "1250.000000",
+      "trade_id": "405321932",
+      "order_id": "1200000059006584",
+      "order_execution_time": "2025-08-08T13:47:11"
+    }
+  ],
+  "ASHOKLEY": [
+    {
+      "symbol": "ASHOKLEY",
+      "isin": "INE208A01029",
+      "trade_date": "2025-08-18",
+      "exchange": "NSE",
+      "segment": "EQ",
+      "series": "EQ",
+      "trade_type": "sell",
+      "auction": "false",
+      "quantity": "40.000000",
+      "price": "130.900000",
+      "trade_id": "3077768",
+      "order_id": "1000000026007412",
+      "order_execution_time": "2025-08-18T11:08:54"
+    }
+  ],
+  "DMART": [
+    {
+      "symbol": "DMART",
+      "isin": "INE192R01011",
+      "trade_date": "2025-08-18",
+      "exchange": "NSE",
+      "segment": "EQ",
+      "series": "EQ",
+      "trade_type": "sell",
+      "auction": "false",
+      "quantity": "1.000000",
+      "price": "4569.600000",
+      "trade_id": "208241929",
+      "order_id": "1100000064076085",
+      "order_execution_time": "2025-08-18T14:27:47"
+    }
+  ],
+  "ITC": [
+    {
+      "symbol": "ITC",
+      "isin": "INE154A01025",
+      "trade_date": "2025-08-18",
+      "exchange": "NSE",
+      "segment": "EQ",
+      "series": "EQ",
+      "trade_type": "buy",
+      "auction": "false",
+      "quantity": "11.000000",
+      "price": "408.550000",
+      "trade_id": "208256256",
+      "order_id": "1100000064181743",
+      "order_execution_time": "2025-08-18T14:28:28"
+    },
+    {
+      "symbol": "ITC",
+      "isin": "INE154A01025",
+      "trade_date": "2025-08-22",
+      "exchange": "BSE",
+      "segment": "EQ",
+      "series": "A",
+      "trade_type": "buy",
+      "auction": "false",
+      "quantity": "2.000000",
+      "price": "400.050000",
+      "trade_id": "3696000",
+      "order_id": "1755837853521694695",
+      "order_execution_time": "2025-08-22T11:09:57"
+    }
+  ],
+  "HDFCBANK": [
+    {
+      "symbol": "HDFCBANK",
+      "isin": "INE040A01034",
+      "trade_date": "2025-08-22",
+      "exchange": "NSE",
+      "segment": "EQ",
+      "series": "EQ",
+      "trade_type": "buy",
+      "auction": "false",
+      "quantity": "1.000000",
+      "price": "1964.800000",
+      "trade_id": "203326199",
+      "order_id": "1100000027894883",
+      "order_execution_time": "2025-08-22T11:11:04"
+    }
+  ],
+  "TATAPOWER": [
+    {
+      "symbol": "TATAPOWER",
+      "isin": "INE245A01021",
+      "trade_date": "2025-08-22",
+      "exchange": "NSE",
+      "segment": "EQ",
+      "series": "EQ",
+      "trade_type": "buy",
+      "auction": "false",
+      "quantity": "3.000000",
+      "price": "385.300000",
+      "trade_id": "603188132",
+      "order_id": "1300000026480886",
+      "order_execution_time": "2025-08-22T11:27:35"
+    }
+  ]
+}
