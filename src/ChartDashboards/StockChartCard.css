@@ -1,0 +1,44 @@
+/* .stockChartCard {
+  position: relative;
+  background: #0b1220;
+  border-radius: 16px;
+  height: fit-content;
+} */
+
+/* .stockChartHeader {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  backdrop-filter: blur(6px);
+  background: linear-gradient(
+    to bottom,
+    rgb(101 93 93 / 90%),
+    rgba(11, 18, 32, 0.4),
+    transparent
+  );
+} */
+
+/* .stockChartBody {
+  box-sizing: border-box;
+} */
+
+.stockChartCard {
+  display: flex;
+  flex-direction: column;
+  background: #0b1220;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.stockChartHeader {
+  position: relative;
+  height: 70px;
+  z-index: 1;
+}
+
+.stockChartBody {
+  flex: 1;
+  display: flex;
+}

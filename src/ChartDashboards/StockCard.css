@@ -1,0 +1,49 @@
+.stockCard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin:auto;
+    padding: 12px 16px;
+    color: #e5e7eb;
+  }
+  
+  .stockLeft {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .stockSymbol {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  
+  .stockExchange {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5f5;
+  }
+  
+  .stockRight {
+    text-align: right;
+  }
+  
+  .stockPrice {
+    display: block;
+    font-weight: 600;
+  }
+  
+  .stockChange {
+    font-size: 12px;
+  }
+  
+  .stockChange.up {
+    color: #22c55e;
+  }
+  
+  .stockChange.down {
+    color: #ef4444;
+  }
+  

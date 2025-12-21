@@ -484,58 +484,6 @@ class CandleStickChart {
     }
   }
 
-
-  // #createCandlesHigh() {
-
-  //   d3.selectAll(`#${this.#objectIDs.candleContainerId} .candle`)
-  //     .append('rect')
-  //     .attr('width', this.#config.candleTailWidth)
-  //     .attr('height', (d) => {
-
-  //       return d.Open > d.Close
-  //         ? this.#yScaleFunc(d.Open) - this.#yScaleFunc(d.High)
-  //         : this.#yScaleFunc(d.Close) - this.#yScaleFunc(d.High);
-  //     })
-
-  //     .attr(
-  //       'x',
-  //       (d) =>
-  //         this.#xScaleFunc(parseDate(d.Date)) - this.#config.candleTailWidth / 2
-  //     )
-  //     .attr('y', (d) => this.#yScaleFunc(d.High))
-  //     .attr('fill', (d) =>
-  //       d.Open > d.Close
-  //         ? this.#colors.upCandlesTail
-  //         : this.#colors.downCandlesTail
-  //     );
-  // }
-
-  // #createCandlesLow() {
-
-  //   d3.selectAll(`#${this.#objectIDs.candleContainerId} .candle`)
-  //     .append('rect')
-  //     .attr('width', this.#config.candleTailWidth)
-  //     .attr('height', (d) =>
-  //       d.Open > d.Close
-  //         ? this.#yScaleFunc(d.Low) - this.#yScaleFunc(d.Close)
-  //         : this.#yScaleFunc(d.Low) - this.#yScaleFunc(d.Open)
-  //     )
-  //     .attr(
-  //       'x',
-  //       (d) =>
-  //         this.#xScaleFunc(parseDate(d.Date)) - this.#config.candleTailWidth / 2
-  //     )
-  //     .attr('y', (d) =>
-  //       d.Open > d.Close ? this.#yScaleFunc(d.Close) : this.#yScaleFunc(d.Open)
-  //     )
-  //     .attr('fill', (d) =>
-  //       d.Open > d.Close
-  //         ? this.#colors.upCandlesTail
-  //         : this.#colors.downCandlesTail
-  //     );
-  // }
-
-
   #createCandlesHigh() {
     if (this.#chartMode !== 'candlestick') return;
 
@@ -607,13 +555,13 @@ class CandleStickChart {
       .append('div')
       .attr('id', this.#objectIDs.toolsBtnsContainer)
       .style('display', 'flex')
-      .style('height', '40px')
+      .style('height', '60px')
       .style('pointer-events', 'none')
       .style('justify-content', 'end')
       .style('gap', '10px')
       .style(
         'padding-right',
-        window.innerWidth > this.#config.mobileBreakPoint ? '20px' : '0'
+        window.innerWidth > this.#config.mobileBreakPoint ? '10px' : '0'
       )
       .style('position', 'relative');
 

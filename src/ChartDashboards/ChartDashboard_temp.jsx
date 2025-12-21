@@ -12,6 +12,7 @@ import ENV from '../config';
 import CandleStickChart from '../Chart/CandleStickChart';
 import NoteTextarea from '../Chart/NoteTextArea';
 import { Puff } from "react-loader-spinner";
+import StockChartCard from './StockChartCard';
 
 /* ----------------------------------------------------
    Chart Component
@@ -23,19 +24,13 @@ const Chart = ({ symbol, trades, onReady }) => {
   const [priceData, setPriceData] = useState([]);
   const [annotations, setAnnotations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cardData, setCardData] = useState(null);
 
   const theme = "dark";
 
-  // ✅ STABLE chart id (no randomness)
-  const chartId = useMemo(() => `chart-${symbol}`, [symbol]);
+  const chartId = useMemo(() => `chart-${symbol.replace(/[^a-zA-Z0-9]/g, '')}`, [symbol]);
+  const stableTrades = useMemo(() => JSON.stringify(trades ?? []), [trades]);
 
-  // ✅ STABILIZE trades to avoid ref-change fetch loops
-  const stableTrades = useMemo(
-    () => JSON.stringify(trades ?? []),
-    [trades]
-  );
-
-  /* ---------------- Fetch data ---------------- */
   useEffect(() => {
     let cancelled = false;
 
@@ -58,6 +53,7 @@ const Chart = ({ symbol, trades, onReady }) => {
 
         setPriceData(res.data.prices);
         setAnnotations(res.data.annotations);
+        setCardData(res.data.card_data);
       } catch (err) {
         console.error(`Error fetching ${symbol}`, err);
       } finally {
@@ -93,19 +89,16 @@ const Chart = ({ symbol, trades, onReady }) => {
         chartInstance.current.clear?.();
         chartInstance.current.setData(priceData);
         chartInstance.current.setAnnotations(annotations);
+
       }
 
       chartInstance.current.draw();
-      onReady?.(); // keep this
+      onReady?.();
     };
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(draw);
-    });
+    requestAnimationFrame(() => requestAnimationFrame(draw));
   }, [loading, priceData, annotations, chartId]);
 
-
-  /* ---------------- Resize ---------------- */
   const resizeChart = useCallback(() => {
     if (!chartRef.current || !chartInstance.current) return;
 
@@ -119,7 +112,6 @@ const Chart = ({ symbol, trades, onReady }) => {
     return () => window.removeEventListener("resize", resizeChart);
   }, [resizeChart]);
 
-  /* ---------------- Cleanup ---------------- */
   useEffect(() => {
     return () => {
       if (chartInstance.current) {
@@ -130,16 +122,11 @@ const Chart = ({ symbol, trades, onReady }) => {
   }, []);
 
   return (
-    <>
-      <h1>{symbol}</h1>
+    <StockChartCard stock={cardData}>
       <div className={`${styles.chart} ${styles[theme]}`}>
         {loading && (
           <div className={styles.chartLoader}>
-            <Puff
-              color="#6366F1"
-              size={60}
-              ariaLabel="loading"
-            />
+            <Puff color="#6366F1" size={60} ariaLabel="loading" />
           </div>
         )}
 
@@ -152,9 +139,10 @@ const Chart = ({ symbol, trades, onReady }) => {
           }}
         />
       </div>
-    </>
+    </StockChartCard>
   );
 };
+
 
 
 /* ----------------------------------------------------
