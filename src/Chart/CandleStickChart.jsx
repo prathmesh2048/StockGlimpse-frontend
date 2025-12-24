@@ -43,6 +43,8 @@ class CandleStickChart {
   #theme = null;
   #annotationOverrides = new Map();
   #lineData = [];
+  #rightOffsetFactor = 0.40;
+
 
   constructor(width, height, data, stockAnnotationsData, id, theme = "dark") {
 
@@ -61,7 +63,16 @@ class CandleStickChart {
     this.#calculateCandleWidthDate();
     this.#minMaxDate = minMaxDate;
     this.#zoomRange1 = minMaxDate[0].getTime() - this.#candleWidthDate / 2;
-    this.#zoomRange2 = minMaxDate[1].getTime() + this.#candleWidthDate / 2;
+
+    const totalRange =
+      minMaxDate[1].getTime() - minMaxDate[0].getTime();
+
+    const rightPadding = totalRange * this.#rightOffsetFactor;
+
+    this.#zoomRange2 =
+      minMaxDate[1].getTime() + rightPadding;
+
+
     this.#createToolsBtns();
     this.#measureState = {
       active: false,
@@ -632,8 +643,17 @@ class CandleStickChart {
   #handleResetZoom() {
     this.#zoomRange1 =
       this.#minMaxDate[0].getTime() - this.#candleWidthDate / 2;
+
+    // this.#zoomRange2 =
+    //   this.#minMaxDate[1].getTime() + this.#candleWidthDate / 2;
+
+    const totalRange =
+      this.#minMaxDate[1].getTime() - this.#minMaxDate[0].getTime();
+
     this.#zoomRange2 =
-      this.#minMaxDate[1].getTime() + this.#candleWidthDate / 2;
+      this.#minMaxDate[1].getTime() + totalRange * this.#rightOffsetFactor;
+
+
     this.#filteredData = this.data;
     this.#zoomFactor = 1;
     this.#removeAllLines();
@@ -1294,6 +1314,8 @@ class CandleStickChart {
 
     this.#zoomRange1 = left;
     this.#zoomRange2 = right;
+    // this.#zoomRange2 += (right - this.#zoomRange1) * this.#rightOffsetFactor;
+
 
     let filteredData = this.data.filter((x) => {
       return (

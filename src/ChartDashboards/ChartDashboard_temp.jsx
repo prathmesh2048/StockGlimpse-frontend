@@ -14,6 +14,7 @@ import NoteTextarea from '../Chart/NoteTextArea';
 import { Puff } from "react-loader-spinner";
 import StockChartCard from './StockChartCard';
 
+
 /* ----------------------------------------------------
    Chart Component
 ---------------------------------------------------- */
