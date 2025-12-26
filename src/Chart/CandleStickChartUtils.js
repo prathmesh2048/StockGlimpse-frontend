@@ -1,8 +1,8 @@
-import ReactDOMServer from 'react-dom/server';
+import ReactDOMServer from "react-dom/server";
 import ReactDOM from "react-dom/client";
 
-import * as d3 from 'd3';
-import NoteTextarea from './NoteTextArea';
+import * as d3 from "d3";
+import NoteTextarea from "./NoteTextArea";
 
 export const parseDate = (dateStr) => new Date(dateStr);
 
@@ -38,16 +38,16 @@ export const findFixedDataIndex = (dataPoint, data) => {
 };
 
 export const modifyAnnotationEnd = (group, colors) => {
+  group.selectAll(".annotation-note-title").style("font-size", "13px");
 
-  group.selectAll(".annotation-note-title")
-    .style("font-size", "13px");
-
-  group.selectAll(".annotation-note-label")
+  group
+    .selectAll(".annotation-note-label")
     .style("font-size", "11px")
     .style("fill", colors.annotationTextColor);
 
   // Add the "✏️ Notes" clickable text
-  group.selectAll(".annotation-note-label")
+  group
+    .selectAll(".annotation-note-label")
     .append("tspan")
     .attr("x", 0)
     .attr("dy", "1.8em")
@@ -57,18 +57,24 @@ export const modifyAnnotationEnd = (group, colors) => {
     .style("cursor", "pointer")
     .text("Notes ✏️")
     .on("click", function (event, d) {
-
       console.log("Note data:", d);
 
       const noteGroup = d3.select(this.closest(".annotation-note-content"));
       noteGroup.select(".note-textarea").remove();
 
-      const fo = noteGroup.append("foreignObject")
+      const isMobile = window.innerWidth <= 600;
+      const foX = 50;
+      const foY = 50;
+      const foWidth = isMobile ? 200 : 400;
+      const foHeight = isMobile ? 200 : 300;
+
+      const fo = noteGroup
+        .append("foreignObject")
         .attr("class", "note-textarea")
-        .attr("x", 100)
-        .attr("y", 40)
-        .attr("width", 400)
-        .attr("height", 300);
+        .attr("x", foX)
+        .attr("y", foY)
+        .attr("width", foWidth)
+        .attr("height", foHeight);
 
       const container = document.createElement("div");
       fo.node().appendChild(container);
@@ -78,73 +84,80 @@ export const modifyAnnotationEnd = (group, colors) => {
         <NoteTextarea
           data={d}
           onClose={() => fo.remove()}
-        />
+          x={foX}
+          y={foY}
+          width={foWidth}
+          height={foHeight}
+        />,
       );
 
       const foNode = fo.node();
-      ["wheel", "touchmove", "pointerdown"].forEach(evt =>
-        foNode.addEventListener(evt, e => e.stopPropagation(), { passive: true })
+      ["wheel", "touchmove", "pointerdown"].forEach((evt) =>
+        foNode.addEventListener(evt, (e) => e.stopPropagation(), {
+          passive: true,
+        }),
       );
-      
     });
 
   // Style the annotation handle and add icon
-  d3.selectAll('.annotation .annotation-note .handle')
-    .attr('stroke-dasharray', null)
+  d3.selectAll(".annotation .annotation-note .handle")
+    .attr("stroke-dasharray", null)
     .each(function () {
       const handle = d3.select(this);
       const parent = d3.select(this.parentNode);
 
-      const cx = +handle.attr('cx');
-      const cy = +handle.attr('cy');
+      const cx = +handle.attr("cx");
+      const cy = +handle.attr("cy");
 
-      parent.append('image')
-        .attr('x', cx - 8)
-        .attr('y', cy - 8)
-        .attr('width', 16)
-        .attr('height', 16)
+      parent
+        .append("image")
+        .attr("x", cx - 8)
+        .attr("y", cy - 8)
+        .attr("width", 16)
+        .attr("height", 16)
         .attr(
-          'href',
+          "href",
           d3.select(this.parentNode).datum().data.transactionType === "buy"
-            ? '/images/B.png'
-            : '/images/S.png'
+            ? "/images/B.png"
+            : "/images/S.png",
         )
-        .attr('pointer-events', 'none');
+        .attr("pointer-events", "none");
     });
 };
 
-
-
 export const colors = (theme) => {
   return {
-    grid: theme === "dark" ? 'rgb(34, 38, 49)' : 'rgb(225, 225, 225)',
+    grid: theme === "dark" ? "rgb(34, 38, 49)" : "rgb(225, 225, 225)",
     gridBackground: theme === "dark" ? "rgb(23, 27, 38)" : "rgb(244, 253, 254)",
-    background: theme === "dark" ? 'rgb(23, 27, 38)' : 'rgba(191, 193, 198,0.1)',
-    candleInfoText: '#b2b5be',
-    candleInfoTextUp: '#089981',
-    candleInfoTextDown: '#e13443',
-    tickColor: theme === "dark" ? 'rgb(255, 255, 255)' : 'rgb(74, 76, 82)', // this color is used for x and y labels
-    downCandlesStroke: '#e13443',
-    downCandlesFill: '#e13443',
-    downCandlesTail: '#e13443',
-    upCandlesStroke: '#089981',
-    upCandlesFill: '#089981',
-    upCandlesTail: '#089981',
-    selectorLine: 'rgba(178,181,190,0.5)',
-    selectorLableBackground: '#2a2e39',
-    selectorLabelText: '#b2b5be',
-    short: '#fff',
-    shortStroke: '#fff',
-    long: '#fff',
-    longStroke: '#fff',
-    sl: '#F9DB04',
-    slStroke: '#F9DB04',
-    tp: '#04F5F9',
-    tpStroke: '#04F5F9',
-    activeTools: theme === "dark" ? 'rgb(4, 245, 249)' : 'rgb(13, 110, 253)',
-    deActiveTools: theme === "dark" ? 'rgb(255, 255, 255)' : 'rgb(85, 85, 85)',
-    annotationTextColor: theme === "dark" ? "rgb(203, 203, 203)" : "rgb(5, 4, 4)",
-    annotationLineColor: theme === "dark" ? "rgb(203, 203, 203)" : "rgb(5, 4, 4)",
+    background:
+      theme === "dark" ? "rgb(23, 27, 38)" : "rgba(191, 193, 198,0.1)",
+    candleInfoText: "#b2b5be",
+    candleInfoTextUp: "#089981",
+    candleInfoTextDown: "#e13443",
+    tickColor: theme === "dark" ? "rgb(255, 255, 255)" : "rgb(74, 76, 82)", // this color is used for x and y labels
+    downCandlesStroke: "#e13443",
+    downCandlesFill: "#e13443",
+    downCandlesTail: "#e13443",
+    upCandlesStroke: "#089981",
+    upCandlesFill: "#089981",
+    upCandlesTail: "#089981",
+    selectorLine: "rgba(178,181,190,0.5)",
+    selectorLableBackground: "#2a2e39",
+    selectorLabelText: "#b2b5be",
+    short: "#fff",
+    shortStroke: "#fff",
+    long: "#fff",
+    longStroke: "#fff",
+    sl: "#F9DB04",
+    slStroke: "#F9DB04",
+    tp: "#04F5F9",
+    tpStroke: "#04F5F9",
+    activeTools: theme === "dark" ? "rgb(4, 245, 249)" : "rgb(13, 110, 253)",
+    deActiveTools: theme === "dark" ? "rgb(255, 255, 255)" : "rgb(85, 85, 85)",
+    annotationTextColor:
+      theme === "dark" ? "rgb(203, 203, 203)" : "rgb(5, 4, 4)",
+    annotationLineColor:
+      theme === "dark" ? "rgb(203, 203, 203)" : "rgb(5, 4, 4)",
     lineColor: theme === "dark" ? "rgb(203, 203, 203)" : "rgb(5, 4, 4)",
   };
 };
@@ -167,7 +180,7 @@ export const config = (width, height) => {
     yLabelFontSize: 12,
     decimal: 2,
     charWidth: 42,
-    selectoreStrokeDashArray: '2,2',
+    selectoreStrokeDashArray: "2,2",
     timeFormat: "%a %d %b'%y",
     mobileBreakPoint: 600,
     infoTextWidth: undefined,

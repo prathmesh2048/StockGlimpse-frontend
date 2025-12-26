@@ -1200,7 +1200,7 @@ class CandleStickChart {
       },
       note: {
         align: "middle",
-        wrap: 150,
+        wrap: 400,
         lineType: null,
         line: []
       }

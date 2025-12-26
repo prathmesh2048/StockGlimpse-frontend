@@ -2,9 +2,7 @@ import React, { useState, useCallback, memo, useEffect } from "react";
 import axios from "axios";
 import ENV from "../config";
 
-
-const NoteTextarea = memo(({ data, onClose }) => {
-
+const NoteTextarea = memo(({ data, onClose, x, y, width, height }) => {
   const [note, setNote] = useState("");
   const [isMobile, setIsMobile] = useState(false);
   const [savedNotes, setSavedNotes] = useState([]);
@@ -18,7 +16,6 @@ const NoteTextarea = memo(({ data, onClose }) => {
     return () => window.removeEventListener("resize", checkWidth);
   }, []);
 
-  // 🔹 Fetch notes from backend
   useEffect(() => {
     const fetchNotes = async () => {
       try {
@@ -34,35 +31,26 @@ const NoteTextarea = memo(({ data, onClose }) => {
   }, [data?.symbol]);
 
   const handleChange = useCallback((e) => setNote(e.target.value), []);
-
   const handleUndo = useCallback(() => {
     setNote("");
     setEditingIndex(null);
     setEditingId(null);
   }, []);
 
-  // 🔹 Save or Update Note
   const handleSave = useCallback(async () => {
     const trimmed = note.trim();
     if (!trimmed) return;
 
     try {
       if (editingId) {
-        const res = await axios.put(`${ENV.BASE_API_URL}/api/notes/${editingId}/`, {
-          content: trimmed,
-        }, {
+        const res = await axios.put(`${ENV.BASE_API_URL}/api/notes/${editingId}/`, { content: trimmed }, {
           headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` },
         });
-        setSavedNotes((prev) =>
-          prev.map((n) => (n.id === editingId ? res.data : n))
-        );
+        setSavedNotes((prev) => prev.map((n) => (n.id === editingId ? res.data : n)));
       } else {
-        const res = await axios.post(`${ENV.BASE_API_URL}/api/notes/`, {
-          stock: data?.symbol,
-          content: trimmed,
-        }, {
+        const res = await axios.post(`${ENV.BASE_API_URL}/api/notes/`, { stock: data?.symbol, content: trimmed }, {
           headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` },
-        })
+        });
         setSavedNotes((prev) => [res.data, ...prev]);
       }
       setNote("");
@@ -73,116 +61,109 @@ const NoteTextarea = memo(({ data, onClose }) => {
     }
   }, [note, editingId, data?.symbol]);
 
-  // 🔹 Edit
   const handleNoteClick = useCallback((n, i) => {
     setNote(n.content);
     setEditingIndex(i);
     setEditingId(n.id);
   }, []);
 
-  // 🔹 Delete
-  const handleDelete = useCallback(
-    async (index) => {
-      const noteToDelete = savedNotes[index];
-      try {
-        await axios.delete(`${ENV.BASE_API_URL}/api/notes/${noteToDelete.id}/`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` },
-        });
-        setSavedNotes((prev) => prev.filter((_, i) => i !== index));
-      } catch (err) {
-        console.error("Delete note error:", err);
-      }
-    },
-    [savedNotes]
-  );
-
-  const dynamic = getDynamicStyles(isMobile);
+  const handleDelete = useCallback(async (index) => {
+    const noteToDelete = savedNotes[index];
+    try {
+      await axios.delete(`${ENV.BASE_API_URL}/api/notes/${noteToDelete.id}/`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('jwtToken')}` },
+      });
+      setSavedNotes((prev) => prev.filter((_, i) => i !== index));
+    } catch (err) {
+      console.error("Delete note error:", err);
+    }
+  }, [savedNotes]);
 
   return (
     <div
-      style={{ ...styles.container, ...dynamic.container }}
-      onWheel={(e) => e.stopPropagation()}
-      onTouchMove={(e) => e.stopPropagation()}
-      onClick={(e) => e.stopPropagation()}
+  className="bg-gray-900/95 p-3 rounded-lg font-sans text-gray-300 shadow-lg transition-all duration-200 flex flex-col"
+  style={{
+    position: "absolute",
+    // left: x,
+    // top: y,
+    width: width,
+    height: height-50,
+    overflowY: "auto",
+  }}
+  onWheel={(e) => e.stopPropagation()}
+  onTouchMove={(e) => e.stopPropagation()}
+  onClick={(e) => e.stopPropagation()}
+>
+  {/* Header */}
+  <div className="flex justify-between items-center mb-2">
+    <span className="text-xs text-gray-400 font-medium">
+      {editingIndex !== null ? "Edit Note" : "Add Note"}
+    </span>
+    <button type="button" onClick={onClose} className="p-1 flex items-center justify-center">
+      <CloseIcon />
+    </button>
+  </div>
+
+  {/* Textarea */}
+  <textarea
+    placeholder="Add your notes here"
+    value={note}
+    onChange={handleChange}
+    rows={isMobile ? 4 : 3}
+    className="flex-shrink-0 w-full bg-gray-800/85 border border-gray-500/35 rounded-md text-gray-300 text-sm p-2 outline-none resize-none"
+  />
+
+  {/* Buttons */}
+  <div className="flex mt-2 gap-2 justify-end">
+    <button
+      type="button"
+      onClick={handleUndo}
+      className="bg-gray-700/90 text-gray-400 text-sm font-semibold px-3 py-1 rounded"
     >
-      <div style={{ ...styles.header, ...dynamic.header }}>
-        <span style={styles.title}>
-          {editingIndex !== null ? "Edit Note" : "Add Note"}
-        </span>
-        <button type="button" onClick={onClose} style={styles.closeButton}>
-          <CloseIcon />
-        </button>
-      </div>
+      Undo
+    </button>
+    <button
+      type="button"
+      onClick={handleSave}
+      disabled={!note.trim()}
+      className={`bg-gray-600/95 text-gray-200 text-sm font-semibold px-3 py-1 rounded transition-opacity duration-200 ${
+        !note.trim() ? "opacity-50 cursor-not-allowed" : "opacity-100"
+      }`}
+    >
+      {editingIndex !== null ? "Update" : "Save"}
+    </button>
+  </div>
 
-      <textarea
-        placeholder="Add your notes here"
-        value={note}
-        onChange={handleChange}
-        style={{ ...styles.textarea, ...dynamic.textarea }}
-        rows={isMobile ? 4 : 3}
-      />
-
-      <div style={{ ...styles.buttonRow, ...dynamic.buttonRow }}>
-        <button
-          type="button"
-          style={{ ...styles.button, ...styles.undoBtn }}
-          onClick={handleUndo}
+  {/* History */}
+  <div className="mt-3 flex-1 pr-1">
+    {savedNotes.length === 0 ? (
+      <div className="text-center text-gray-500 text-sm mt-4">No notes yet.</div>
+    ) : (
+      savedNotes.map((n, i) => (
+        <div
+          key={n.id || i}
+          className="flex justify-between items-center bg-gray-800/90 rounded-md px-2 py-2 mb-2 text-sm text-gray-300 border-l-4 border-gray-600 cursor-pointer"
         >
-          Undo
-        </button>
-        <button
-          type="button"
-          style={{
-            ...styles.button,
-            ...styles.saveBtn,
-            opacity: note.trim() ? 1 : 0.5,
-          }}
-          onClick={handleSave}
-          disabled={!note.trim()}
-        >
-          {editingIndex !== null ? "Update" : "Save"}
-        </button>
-      </div>
+          <div onClick={() => handleNoteClick(n, i)} className="flex-1">
+            {n.content}
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(i);
+            }}
+            className="text-white text-xs ml-1 bg-transparent px-1 py-0.5 rounded"
+          >
+            x
+          </button>
+        </div>
+      ))
+    )}
+  </div>
+</div>
 
-      <div style={{ ...styles.history, ...dynamic.history }}>
-        {savedNotes.length === 0 ? (
-          <div style={styles.emptyText}>No notes yet.</div>
-        ) : (
-          savedNotes.map((n, i) => (
-            <div
-              key={n.id || i}
-              style={{
-                ...styles.noteItem,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <div
-                onClick={() => handleNoteClick(n, i)}
-                style={{ flex: 1, cursor: "pointer" }}
-              >
-                {n.content}
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(i);
-                }}
-                style={styles.deleteBtn}
-              >
-                x
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
   );
 });
-
-// CloseIcon, styles, and getDynamicStyles stay the same
-
 
 const CloseIcon = memo(() => (
   <svg
@@ -191,144 +172,10 @@ const CloseIcon = memo(() => (
     viewBox="0 0 18 18"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
-    style={{ display: "block" }}
   >
-    <line
-      x1="4"
-      y1="4"
-      x2="14"
-      y2="14"
-      stroke="#c0c7d0"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-    <line
-      x1="14"
-      y1="4"
-      x2="4"
-      y2="14"
-      stroke="#c0c7d0"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
+    <line x1="4" y1="4" x2="14" y2="14" stroke="#c0c7d0" strokeWidth="2" strokeLinecap="round" />
+    <line x1="14" y1="4" x2="4" y2="14" stroke="#c0c7d0" strokeWidth="2" strokeLinecap="round" />
   </svg>
 ));
-
-const styles = {
-  container: {
-    resize: "both",
-    overflow: "auto",
-    fontFamily: "'Inter', 'Segoe UI', sans-serif",
-    backgroundColor: "rgba(34, 38, 45, 0.95)",
-    borderRadius: 8,
-    padding: "12px 14px 14px",
-    width: 320,
-    color: "#c0c7d0",
-    boxSizing: "border-box",
-    boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
-    transition: "all 0.25s ease",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 13,
-    color: "#9aa5b1",
-    fontWeight: 500,
-  },
-  closeButton: {
-    background: "transparent",
-    border: "none",
-    cursor: "pointer",
-    padding: 4,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  textarea: {
-    width: "95%",
-    backgroundColor: "rgba(26, 30, 36, 0.85)",
-    border: "1px solid rgba(120, 130, 140, 0.35)",
-    borderRadius: 6,
-    color: "#c0c7d0",
-    fontSize: 13,
-    padding: 8,
-    resize: "none",
-    outline: "none",
-  },
-  buttonRow: {
-    marginTop: 10,
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: 8,
-  },
-  button: {
-    fontSize: 13,
-    padding: "6px 14px",
-    borderRadius: 5,
-    border: "none",
-    cursor: "pointer",
-    fontWeight: 600,
-    transition: "opacity 0.2s ease",
-  },
-  undoBtn: {
-    backgroundColor: "rgba(55, 60, 70, 0.9)",
-    color: "#8a919e",
-  },
-  saveBtn: {
-    backgroundColor: "rgba(90, 95, 105, 0.95)",
-    color: "#e0e4eb",
-  },
-  history: {
-    marginTop: 14,
-    maxHeight: 70,
-    overflowY: "auto",
-    paddingRight: 4,
-  },
-  noteItem: {
-    background: "rgba(44, 48, 56, 0.9)",
-    borderRadius: 6,
-    padding: "9px 10px",
-    marginBottom: 8,
-    fontSize: 13,
-    color: "#c9cfd8",
-    borderLeft: "3px solid #5a606b",
-    cursor: "pointer",
-  },
-  deleteBtn: {
-    background: "rgba(255, 60, 60, 0.0)",
-    color: "#fff",
-    border: "none",
-    borderRadius: 4,
-    padding: "2px 6px",
-    cursor: "pointer",
-    fontSize: 11,
-    marginLeft: 6,
-  },
-  emptyText: {
-    textAlign: "center",
-    color: "#6c7680",
-    fontSize: 13,
-    marginTop: 18,
-  },
-};
-
-const getDynamicStyles = (isMobile) =>
-  isMobile
-    ? {
-      container: {
-        width: "92vw",
-        padding: "10px 12px",
-        borderRadius: 10,
-      },
-      header: { marginBottom: 8 },
-      textarea: { fontSize: 14, minHeight: 80 },
-      buttonRow: { marginTop: 8, justifyContent: "space-between" },
-      history: { maxHeight: 120 },
-    }
-    : {};
 
 export default NoteTextarea;
