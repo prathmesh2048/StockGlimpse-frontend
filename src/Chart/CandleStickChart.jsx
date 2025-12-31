@@ -8,7 +8,7 @@ import {
 } from 'd3-svg-annotation';
 
 import { colors, config, getCursorPoint, parseDate, modifyAnnotationEnd } from './CandleStickChartUtils.js';
-import { placeWithoutOverlap } from './Utils';
+import { placeWithoutOverlap, drawBrushGradient } from './Utils';
 
 class CandleStickChart {
 
@@ -41,7 +41,8 @@ class CandleStickChart {
   #chartMode = null;
   #annotationsData = [];
   #theme = null;
-  #annotationOverrides = new Map();
+  #annotationCache = new Map();
+  #isPnLWindowClosed = false;
   #lineData = [];
   #rightOffsetFactor = 0.40;
 
@@ -83,7 +84,7 @@ class CandleStickChart {
 
     this.#modeHandler('pan');
     this.#chartMode = 'line';
-    this.#annotationOverrides = this.#annotationOverrides || new Map();
+    this.#annotationCache = this.#annotationCache || new Map();
 
   }
 
@@ -1223,7 +1224,7 @@ class CandleStickChart {
       .annotations(
         data.map(d => {
 
-          const override = this.#annotationOverrides.get(d.id) || {};
+          const override = this.#annotationCache.get(d.id) || {};
 
           let dx, dy;
           if (override.dx !== undefined) {
@@ -1270,7 +1271,7 @@ class CandleStickChart {
         })
       ).on("dragend", ann => {
         console.log("Annotation dragged:", ann);
-        this.#annotationOverrides.set(ann.data.id, { dx: ann.dx, dy: ann.dy });
+        this.#annotationCache.set(ann.data.id, { dx: ann.dx, dy: ann.dy });
       });
 
 
@@ -1628,6 +1629,186 @@ class CandleStickChart {
     d3.zoom().on('zoom', null);
   }
 
+  #renderBrush() {
+
+    if (this.#isPnLWindowClosed) return;
+
+    const svg = d3.select(`#${this.#objectIDs.svgId}`);
+    const height = this.#config.svgHeight;
+    const width = this.#config.svgWidth;
+
+    let winX = width * 0.1;
+    let winWidth = width * 0.12;
+
+    const handleWidth = 5;
+    const handleHeight = height * 0.2;
+    const handleYOffset = (height - handleHeight) / 2;
+    const minWidth = handleWidth * 2 + 6;
+    const closeSize = 14;
+
+    // top layer
+    let brushLayer = svg.select(`#${this.id}-brush-layer`);
+    if (brushLayer.empty()) {
+      brushLayer = svg.append("g").attr("id", `${this.id}-brush-layer`);
+    } else {
+      brushLayer.selectAll("*").remove();
+    }
+    brushLayer.raise();
+
+    // window
+    const windowRect = brushLayer.append("rect")
+      .attr("y", 0)
+      .attr("height", height)
+      .attr("rx", 2)
+      .attr("fill", "rgba(20,228,107,0.01)")
+      .attr("stroke", "#888")
+      .attr("cursor", "grab");
+
+    // handles
+    const leftHandle = brushLayer.append("rect")
+      .attr("y", handleYOffset)
+      .attr("width", handleWidth)
+      .attr("height", handleHeight)
+      .attr("fill", "rgba(228,228,20,0.9)")
+      .attr("stroke", "#888")
+      .attr("cursor", "ew-resize");
+
+    const rightHandle = brushLayer.append("rect")
+      .attr("y", handleYOffset)
+      .attr("width", handleWidth)
+      .attr("height", handleHeight)
+      .attr("fill", "rgba(228,228,20,0.9)")
+      .attr("stroke", "#888")
+      .attr("cursor", "ew-resize");
+
+    // close button
+    const closeBtn = brushLayer.append("g")
+      .attr("cursor", "pointer")
+      .on("pointerdown", e => e.stopPropagation())
+      .on("click", () => {
+        this.#isPnLWindowClosed = true;
+        brushLayer.remove()
+        this.draw(); // redraw to remove brush
+      });
+
+    closeBtn.append("circle")
+      .attr("r", closeSize / 2)
+      .attr("fill", "rgba(40,40,40,0.85)");
+
+    closeBtn.append("path")
+      .attr("d", "M -4 -4 L 4 4 M -4 4 L 4 -4")
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 1.6)
+      .attr("stroke-linecap", "round");
+
+    // block pan
+    brushLayer.selectAll("*")
+      .on("pointerdown", e => e.stopPropagation());
+
+    const update = () => {
+      winX = Math.round(winX);
+      winWidth = Math.round(winWidth);
+
+      windowRect
+        .attr("x", winX)
+        .attr("width", winWidth);
+
+      leftHandle.attr("x", winX - handleWidth / 2);
+      rightHandle.attr("x", winX + winWidth - handleWidth / 2);
+
+      closeBtn.attr(
+        "transform",
+        `translate(${winX + winWidth - closeSize / 2 - 4},${closeSize / 2 + 4})`
+      );
+
+      // Drawing Gradient Area Inside Brush Window
+      drawBrushGradient(winX, winWidth, brushLayer, this.getChartData(), this.getAnnotationsData(), this.#objectIDs.svgId, this.getXScaleFunc(), this.getYScaleFunc());
+    };
+
+    update();
+
+    // Drawing Gradient Area Inside Brush Window
+    drawBrushGradient(winX, winWidth, brushLayer, this.getChartData(), this.getAnnotationsData(), this.#objectIDs.svgId, this.getXScaleFunc(), this.getYScaleFunc());
+
+    // drag window
+    windowRect.call(
+      d3.drag()
+        .on("start", e => e.sourceEvent.stopPropagation())
+        .on("drag", e => {
+          winX = Math.max(0, Math.min(width - winWidth, e.x));
+          update();
+        })
+    );
+
+    // left handle drag
+    leftHandle.call(
+      d3.drag()
+        .on("start", e => e.sourceEvent.stopPropagation())
+        .on("drag", e => {
+          const newX = Math.max(0, Math.min(winX + winWidth - minWidth, e.x));
+          winWidth += winX - newX;
+          winX = newX;
+          update();
+        })
+    );
+
+    // right handle drag
+    rightHandle.call(
+      d3.drag()
+        .on("start", e => e.sourceEvent.stopPropagation())
+        .on("drag", e => {
+          winWidth = Math.max(minWidth, Math.min(width - winX, e.x - winX));
+          update();
+        })
+    );
+  }
+
+
+  #renderPnLToggleButton() {
+
+    if (!this.#isPnLWindowClosed) return;
+
+    const svg = d3.select(`#${this.#objectIDs.svgId}`);
+    const height = this.#config.svgHeight;
+    const width = this.#config.svgWidth;
+
+    // prevent duplicate
+    if (!svg.select(`#${this.id}-pnl-btn`).empty()) return;
+
+    const btnGroup = svg.append("g")
+      .attr("id", `${this.id}-pnl-btn`)
+      .attr("transform", `translate(${width - 40}, ${height / 2 - 70})`) // more space from edge
+      .attr("cursor", "pointer")
+      .on("pointerdown", e => e.stopPropagation())
+      .on("click", () => {
+        this.#isPnLWindowClosed = !this.#isPnLWindowClosed;
+        this.draw();
+      });
+
+    // Button background
+    btnGroup.append("rect")
+      .attr("width", 20)
+      .attr("height", 160)
+      .attr("rx", 4)
+      .attr("fill", "#1f2933")
+      .attr("stroke", "#3b82f6")
+      .attr("stroke-width", 1.5)
+      .style("filter", "drop-shadow(0 4px 8px rgba(0,0,0,0.4))");
+
+    // Rotated text
+    btnGroup.append("text")
+      .attr("x", 15)
+      .attr("y", 77)
+      .attr("fill", "#fff")
+      .attr("font-size", 14)
+      .attr("font-weight", 300)
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "middle")
+      .attr("transform", "rotate(-90, 15, 80)")
+      .text("💰 View P&L Now");
+
+  }
+
 
   setColors(colorObj) {
     for (const key in colorObj) {
@@ -1686,7 +1867,8 @@ class CandleStickChart {
     this.#addEventListeners();
     this.#drawStaticAnnotationFromData();
     this.#redrawCachedLines();
-
+    this.#renderBrush();
+    this.#renderPnLToggleButton();
   }
 
 }

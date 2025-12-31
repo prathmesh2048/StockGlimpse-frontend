@@ -1,37 +1,25 @@
-import React from 'react';
-import HeroSection from './HeroSection';
-import HowItWorks from './HowItWorks';
-import Footer from './Footer';
-import OneTapLogin from '../Login/oneTapLogin';
-import Navbar from '../Navbar/Navbar';
-import { getToken } from '../utils/auth';
-import useUser from '../hooks/useUser';
-import CTAButton from './CTAButton';
-import './LandingPage.css';
+import React from "react";
+import Navbar from "../Navbar/Navbar";
+import Footer from "./Footer";
+import OneTapLogin from "../Login/oneTapLogin";
+import RecentVisualizations from "./RecentVisualizations";
+import { getToken } from "../utils/auth";
+import Hero from "./Hero";
+import HowItWorks from "./HowItWorks";
 
 const LandingPage = () => {
 
-  const { user, loading } = useUser();
-  if (loading) return <div>Loading...</div>;
-
-  const isLoggedIn = getToken() !== null;
-  // if (!user) return <div>Please log in</div>;
+  const isLoggedIn = !!getToken();
 
   return (
-    <div className="landing-container">
-      <Navbar />
-      <HeroSection />
+    <div className="bg-[#020617] min-h-screen">
+      <Navbar isLandingPage={true} />
+      <Hero />
       <HowItWorks />
-      {!isLoggedIn && <OneTapLogin />}
-      
-      <div className="cta-wrapper">
-        <CTAButton to="/select-broker">Try Free</CTAButton>
-      </div>
-      
+      {isLoggedIn ? <RecentVisualizations /> : <OneTapLogin />}
       <Footer />
     </div>
   );
 };
-
 
 export default LandingPage;

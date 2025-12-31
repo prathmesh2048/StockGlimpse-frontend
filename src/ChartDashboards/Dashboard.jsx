@@ -10,7 +10,7 @@ export default function DashBoard() {
   return (
     <>
       <Navbar solidBackground={true} />
-      <ChartDashboard tradesBySymbol={state.tradesBySymbol} />
+      <ChartDashboard fromHistory={state.fromHistory} tradesBySymbol={state.tradesBySymbol} />
     </>
   );
 }

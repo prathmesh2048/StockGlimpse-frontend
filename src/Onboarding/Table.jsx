@@ -17,7 +17,8 @@ import SendIcon from "@mui/icons-material/Send";
 import { visuallyHidden } from "@mui/utils";
 import { useNavigate } from "react-router-dom";
 
-export default function Table({ data, title = "Data Table" }) {
+export default function Table({ data, title = "Data Table", fromHistory = false }) {
+
   const navigate = useNavigate();
 
   // ✅ STABLE ROW ID (change field if needed)
@@ -80,7 +81,8 @@ export default function Table({ data, title = "Data Table" }) {
       return acc;
     }, {});
 
-    navigate("/temp", { state: { tradesBySymbol } });
+    navigate("/temp", { state: { tradesBySymbol, fromHistory } });
+
   };
 
   const comparator = (a, b) => {

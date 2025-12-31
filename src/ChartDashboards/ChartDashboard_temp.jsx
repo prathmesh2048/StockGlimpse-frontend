@@ -18,7 +18,7 @@ import StockChartCard from './StockChartCard';
 /* ----------------------------------------------------
    Chart Component
 ---------------------------------------------------- */
-const Chart = ({ symbol, trades, onReady }) => {
+const Chart = ({ fromHistory, symbol, trades, onReady }) => {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
@@ -46,7 +46,8 @@ const Chart = ({ symbol, trades, onReady }) => {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
               "Content-Type": "application/json"
-            }
+            },
+            params: { fromHistory }
           }
         );
 
@@ -149,7 +150,7 @@ const Chart = ({ symbol, trades, onReady }) => {
 /* ----------------------------------------------------
    Chart Screen
 ---------------------------------------------------- */
-const ChartScreen = React.memo(({ symbols, tradesBySymbol, viewMode }) => {
+const ChartScreen = React.memo(({ fromHistory, symbols, tradesBySymbol, viewMode }) => {
 
   const [renderCount, setRenderCount] = useState(1);
 
@@ -178,6 +179,7 @@ const ChartScreen = React.memo(({ symbols, tradesBySymbol, viewMode }) => {
     <section className={containerClassName}>
       {chartsToShow.map(symbol => (
         <Chart
+          fromHistory={fromHistory}
           key={symbol}
           symbol={symbol}
           trades={tradesBySymbol[symbol]}
@@ -191,7 +193,7 @@ const ChartScreen = React.memo(({ symbols, tradesBySymbol, viewMode }) => {
 /* ----------------------------------------------------
    ChartDashboard
 ---------------------------------------------------- */
-export default function ChartDashboard({ tradesBySymbol }) {
+export default function ChartDashboard({ fromHistory, tradesBySymbol }) {
   const symbols = useMemo(
     () => Object.keys(tradesBySymbol),
     [tradesBySymbol]
@@ -220,6 +222,7 @@ export default function ChartDashboard({ tradesBySymbol }) {
         </header>
 
         <ChartScreen
+          fromHistory={fromHistory}
           symbols={symbols}
           tradesBySymbol={tradesBySymbol}
           viewMode={viewMode}
