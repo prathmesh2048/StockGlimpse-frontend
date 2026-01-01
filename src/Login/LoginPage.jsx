@@ -4,10 +4,16 @@ import ENV from "../config"; // import your config file
 import "./LoginPage.css";
 import LoginButton from "./LoginButton";
 import { setToken } from '../utils/auth';
+import { useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import LoginMessageToast from "./LoginMessageToast";
 
 const LoginPage = () => {
 
     const navigate = useNavigate();
+
+    const location = useLocation();
+    const loginRequestMessage = location.state?.login_request_message;
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -44,8 +50,24 @@ const LoginPage = () => {
         }
     };
 
+    const [showToast, setShowToast] = useState(false);
+
+    useEffect(() => {
+        if (loginRequestMessage) {
+            setShowToast(true);
+            const timer = setTimeout(() => setShowToast(false), 3500); // 3.5 sec
+            return () => clearTimeout(timer);
+        }
+    }, [loginRequestMessage]);
+
+
     return (
         <div className="login-page">
+            {showToast && (
+                <LoginMessageToast
+                    message={loginRequestMessage}
+                />
+            )}
             <div className="login-container">
                 <h2 className="login-title">Login to Stock Glimpse</h2>
                 <form onSubmit={handleLogin} className="login-form">

@@ -821,6 +821,9 @@ class CandleStickChart {
   }
 
   #candleInfoHandler(d) {
+
+    if (this.#chartMode == 'line') return;
+
     let isUp = d.Open > d.Close;
     document.getElementById(this.#objectIDs.candleInfoId).innerHTML = `
     O <tspan style='fill:${isUp ? this.#colors.candleInfoTextUp : this.#colors.candleInfoTextDown

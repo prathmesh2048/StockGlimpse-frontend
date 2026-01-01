@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./LoginPage.css";
 import { setToken } from '../utils/auth';
-
+import LoginButton from "./LoginButton";
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -112,6 +112,9 @@ const SignupPage = () => {
           <button type="submit" className="login-button">
             Sign Up
           </button>
+          <div style={{ display: "flex", justifyContent: "center", padding: "10px" }}>
+            <LoginButton />
+          </div>
         </form>
         {errorMessage && <p className="error-message">{errorMessage}</p>}
         <p className="login-link">

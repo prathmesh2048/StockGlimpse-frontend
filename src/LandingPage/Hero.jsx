@@ -4,9 +4,12 @@ import {
     Play,
     LineChart,
 } from 'lucide-react';
-import { Link } from "react-router-dom"
+import { useNavigate } from 'react-router-dom';
 
-const Hero = () => {
+const Hero = ({ isLoggedIn }) => {
+
+    const navigate = useNavigate();
+
     return (
         <div className="relative min-h-screen bg-[#020617] overflow-hidden flex flex-col pt-20">
 
@@ -31,27 +34,34 @@ const Hero = () => {
 
                 {/* EXACT HEADLINE */}
                 <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6 max-w-5xl leading-[1.1]">
-                    See your trades on the chart. <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-blue-400 animate-gradient-x">
-                        Get clarity on every decision.
+                    See your trades on the chart <br />
+                    <span className="text-transparent md:text-5xl bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-blue-400 animate-gradient-x">
+                        Spot late entries and early exits instantly
                     </span>
                 </h1>
 
                 {/* EXACT SUBHEADLINE */}
                 <p className="text-lg md:text-xl text-slate-400 mb-10 max-w-3xl leading-relaxed">
-                    Visualize every trade right on your charts with real profit impact. Journal setups, annotate moves, and uncover patterns that grow your earnings exponentially.
+                    Visualize every trade on the chart, note your decisions, and clearly see what actually impacted your profits.
                 </p>
 
                 {/* Buttons */}
                 <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto mb-20">
+                    <button
+                        onClick={() => {
+                            if (!isLoggedIn) {
+                                navigate("/login", { state: { login_request_message: "Don’t guess your trades. Sign in to visualize every buy & sell on the chart." } });
+                            } else {
+                                navigate("/select-broker");
+                            }
+                        }}
+                        className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] hover:shadow-[0_0_60px_-15px_rgba(37,99,235,0.6)] transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2 group"
+                    >
+                        <LineChart className="w-5 h-5" />
+                        Analyze Trades For Free
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </button>
 
-                    <Link to="/select-broker">
-                        <button className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] hover:shadow-[0_0_60px_-15px_rgba(37,99,235,0.6)] transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2 group">
-                            <LineChart className="w-5 h-5" />
-                            Analyze Trades For Free
-                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </button>
-                    </Link>
 
 
                     <button onClick={() => {

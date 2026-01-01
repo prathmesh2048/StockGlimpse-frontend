@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Menu, X, CandlestickChart } from "lucide-react";
+// Added "Coins" to the imports
+import { Menu, X, CandlestickChart, Coins } from "lucide-react";
 import useUser from "../hooks/useUser";
 import { clearToken } from "../utils/auth";
 
-const Navbar = ({ isLandingPage = true }) => {
-
+const Navbar = ({ isLandingPage = false }) => {
   const navigate = useNavigate();
   const { user, loading } = useUser();
 
@@ -13,14 +13,12 @@ const Navbar = ({ isLandingPage = true }) => {
   const [scrolled, setScrolled] = useState(false);
   const [loggedIn, setLoggedIn] = useState(!!user);
 
-  // scroll effect
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // sync auth state
   useEffect(() => {
     setLoggedIn(!!user);
   }, [user]);
@@ -33,29 +31,23 @@ const Navbar = ({ isLandingPage = true }) => {
     navigate("/");
   };
 
-  const link =
-    "text-slate-300 hover:text-white transition text-sm font-medium";
+  const link = "text-slate-300 hover:text-white transition text-sm font-medium flex items-center gap-1.5";
 
   return (
     <>
-      {isLandingPage && <div className="h-16" />}
+      {!isLandingPage && <div className="h-16" />}
 
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all
-    ${isLandingPage
-            ? "bg-gradient-to-tr from-[#01141a] to-[#01222c] border-b border-white/10"
-            : scrolled
-              ? "bg-[#0f172a]/90 backdrop-blur-md border-b border-white/10"
-              : "bg-transparent"
+        className={`fixed top-0 left-0 right-0 z-50 transition-all ${!isLandingPage
+          ? "bg-gradient-to-tr from-[#01141a] to-[#01222c] border-b border-white/10"
+          : scrolled
+            ? "bg-[#0f172a]/90 backdrop-blur-md border-b border-white/10"
+            : "bg-transparent"
           }`}
       >
-
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
-          <div
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 cursor-pointer"
-          >
+          <div onClick={() => navigate("/")} className="flex items-center gap-2 cursor-pointer">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <CandlestickChart className="w-5 h-5 text-white" />
             </div>
@@ -82,12 +74,14 @@ const Navbar = ({ isLandingPage = true }) => {
               </>
             ) : (
               <>
-                <a href="/history" className={link}>history</a>
+
+                <a href="/history" className={link}>History</a>
                 <a href="/profile" className={link}>Profile</a>
-                <button
-                  onClick={handleSignout}
-                  className="text-red-400 hover:text-red-300 text-sm"
-                >
+                {/* Added Coins Link */}
+                <a className={link}>
+                  <Coins className="w-4 h-4 text-yellow-400" /> {user.coins} Coins
+                </a>
+                <button onClick={handleSignout} className="text-red-400 hover:text-red-300 text-sm">
                   Logout
                 </button>
               </>
@@ -95,17 +89,14 @@ const Navbar = ({ isLandingPage = true }) => {
           </div>
 
           {/* Mobile toggle */}
-          <button
-            onClick={() => setOpen(!open)}
-            className="md:hidden text-slate-300"
-          >
+          <button onClick={() => setOpen(!open)} className="md:hidden text-slate-300">
             {open ? <X /> : <Menu />}
           </button>
         </div>
 
         {/* Mobile menu */}
         {open && (
-          <div className="md:hidden bg-[#0f172a] border-t border-white/10 px-6 py-4 space-y-3">
+          <div className="md:hidden bg-[#0f172a] border-t border-white/10 px-6 py-4 flex flex-col gap-3">
             <a href="/" className={link}>Home</a>
             <a href="/about" className={link}>About</a>
             <a href="/services" className={link}>Services</a>
@@ -124,10 +115,11 @@ const Navbar = ({ isLandingPage = true }) => {
               <>
                 <a href="/temp" className={link}>Charts</a>
                 <a href="/profile" className={link}>Profile</a>
-                <button
-                  onClick={handleSignout}
-                  className="text-red-400 text-left"
-                >
+                {/* Added Coins Link Mobile */}
+                <a href="/coins" className={link}>
+                  <Coins className="w-4 h-4 text-yellow-400" />{user.coins} Coins
+                </a>
+                <button onClick={handleSignout} className="text-red-400 text-left">
                   Logout
                 </button>
               </>
@@ -137,7 +129,6 @@ const Navbar = ({ isLandingPage = true }) => {
       </nav>
     </>
   );
-
 };
 
 export default Navbar;

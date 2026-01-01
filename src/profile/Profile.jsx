@@ -48,28 +48,8 @@ export default function Profile() {
                     </div>
                 </div>
 
-                <h2 className="profile-title">Recently Uploaded Files</h2>
 
-                {/* Recently Uploaded Files Section */}
-                <div className="recent-uploads">
-                    <ul className="recent-list">
-                        <li className="recent-item">
-                            <span className="file-name">trades_sept.csv</span>
-                            <span className="file-date">Uploaded on Sep 20, 2025</span>
-                            <button className="view-btn">Visualize</button>
-                        </li>
-                        <li className="recent-item">
-                            <span className="file-name">nifty_data.csv</span>
-                            <span className="file-date">Uploaded on Sep 18, 2025</span>
-                            <button className="view-btn">Visualize</button>
-                        </li>
-                        <li className="recent-item">
-                            <span className="file-name">portfolio.csv</span>
-                            <span className="file-date">Uploaded on Sep 15, 2025</span>
-                            <button className="view-btn">Visualize</button>
-                        </li>
-                    </ul>
-                </div>
+
             </div>
 
         </>

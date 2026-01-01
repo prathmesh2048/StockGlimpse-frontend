@@ -14,7 +14,7 @@ const LandingPage = () => {
   return (
     <div className="bg-[#020617] min-h-screen">
       <Navbar isLandingPage={true} />
-      <Hero />
+      <Hero isLoggedIn={isLoggedIn} />
       <HowItWorks />
       {isLoggedIn ? <RecentVisualizations /> : <OneTapLogin />}
       <Footer />
