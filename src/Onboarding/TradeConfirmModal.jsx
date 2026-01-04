@@ -80,7 +80,7 @@ export default function TradeConfirmModal({
 
                             <button
                                 type="button"
-                                onClick={hasEnoughCoins ? onConfirm : () => window.location.href = "/#"}
+                                onClick={hasEnoughCoins ? onConfirm : () => window.location.href = "/pricing"}
                                 className={`flex-[2] flex items-center justify-center gap-2 text-white bg-emerald-500 hover:bg-emerald-600 focus:ring-4 focus:ring-emerald-200 shadow-lg font-bold rounded-lg text-sm px-5 py-2.5 transition-all`}
                             >
                                 {hasEnoughCoins ? "Yes, let's go!" : "See plans"}

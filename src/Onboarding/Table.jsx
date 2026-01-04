@@ -57,10 +57,18 @@ export default function Table({ data, title = "Please select the trades you want
   };
 
   const handleConfirmWithCoins = async () => {
+
+    const vizId = crypto.randomUUID();
+    localStorage.setItem("viz_id", vizId);
+    console.log("selected trades for coin deduction:", selected);
+
     try {
       await axios.post(
         `${ENV.BASE_API_URL}/api/deduct-coins/`,
-        { trades_count: selected.length },
+        {
+          visualization_id: vizId,
+          trade_ids: selected,
+        },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
@@ -76,7 +84,7 @@ export default function Table({ data, title = "Please select the trades you want
 
 
   const handleContinueToDashboard = () => {
-    if (fromHistory) {
+    if (fromHistory || user?.has_unlimited_coins) {
       // Directly navigate if fromHistory
       handleConfirm();
     } else {

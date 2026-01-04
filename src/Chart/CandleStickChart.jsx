@@ -6,6 +6,7 @@ import {
   annotationCustomType,
   annotationCalloutRect
 } from 'd3-svg-annotation';
+import html2canvas from "html2canvas";
 
 import { colors, config, getCursorPoint, parseDate, modifyAnnotationEnd } from './CandleStickChartUtils.js';
 import { placeWithoutOverlap, drawBrushGradient } from './Utils';
@@ -127,6 +128,47 @@ class CandleStickChart {
     this.draw();
     d3.select("#tools-btn-5")
       .html(this.#getChartTypeIcon());
+  }
+
+  async shareChartScreenshot() {
+    const element = document.querySelector(".stockChartCard");
+    if (!element) return;
+
+    try {
+      // capture screenshot
+      const canvas = await html2canvas(element, {
+        backgroundColor: "#0b1220", // match your dark UI
+        scale: 2, // sharper image
+        useCORS: true
+      });
+
+      const blob = await new Promise((resolve) =>
+        canvas.toBlob(resolve, "image/png")
+      );
+
+      const file = new File([blob], "trade-chart.png", {
+        type: "image/png"
+      });
+
+      // Web Share API
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: "My Trade Visualization",
+          text: "Visualizing my trades on the chart",
+          files: [file]
+        });
+      } else {
+        // fallback: download image
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "trade-chart.png";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error("Share failed:", err);
+    }
   }
 
   setData(newData) {
@@ -561,9 +603,6 @@ class CandleStickChart {
     d3.select(`#${this.#objectIDs.toolsBtnsContainer}`).remove();
 
     d3.select(`#${this.id}`)
-      .selectAll()
-      .data([0])
-      .enter()
       .append('div')
       .attr('id', this.#objectIDs.toolsBtnsContainer)
       .style('display', 'flex')
@@ -578,16 +617,35 @@ class CandleStickChart {
       .style('position', 'relative');
 
     const btns = [
-      { id: 0, tooltip: "Reset Zoom", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 20 20'><g fill='none' fill-rule='evenodd' stroke='white' stroke-linecap='round' stroke-linejoin='round' transform='matrix(0 1 1 0 2.5 2.5)'><path d='m3.98652376 1.07807068c-2.38377179 1.38514556-3.98652376 3.96636605-3.98652376 6.92192932 0 4.418278 3.581722 8 8 8s8-3.581722 8-8-3.581722-8-8-8'/><path d='m4 1v4h-4' transform='matrix(1 0 0 -1 0 6)'/></g></svg>" },
-      { id: 1, tooltip: "Select Zoom Area", icon: "<svg xmlns=\'http://www.w3.org/2000/svg\' fill=\'${this.#colors.deActiveTools}\' width=\'18\' height=\'18\' viewBox=\'2 2 30 30\' id=\'icon\'><path d=\'M31,29.5859l-4.6885-4.6884a8.028,8.028,0,1,0-1.414,1.414L29.5859,31ZM20,26a6,6,0,1,1,6-6A6.0066,6.0066,0,0,1,20,26Z\'/><path d=\'M8,26H4a2.0021,2.0021,0,0,1-2-2V20H4v4H8Z\'/><rect x=\'2\' y=\'12\' width=\'2\' height=\'4\'/><path d=\'M26,8H24V4H20V2h4a2.0021,2.0021,0,0,1,2,2Z\'/><rect x=\'12\' y=\'2\' width=\'4\' height=\'2\'/><path d=\'M4,8H2V4A2.0021,2.0021,0,0,1,4,2H8V4H4Z\'/><rect id=\'_Transparent_Rectangle_\' data-name=\'&lt;Transparent Rectangle&gt;\' fill=\'none\' width=\'32\' height=\'32\'/></svg>'" },
-      { id: 2, tooltip: "Pan (Move Chart)", icon: "<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'21\' height=\'21\' viewBox=\'0 0 512 512\'><title>pan</title><g fill=\'${this.#colors.deActiveTools}\' transform=\'translate(42.666667,42.666667)\'><path d=\'M234.666667,256 L234.666667,341.333333 L277.333333,341.333333 L213.333333,426.666667 L149.333333,341.333333 L192,341.333333 L192,256 L234.666667,256 Z M341.333333,149.333333 L426.666667,213.333333 L341.333333,277.333333 L341.333333,234.666667 L256,234.666667 L256,192 L341.333333,192 L341.333333,149.333333 Z M85.3333333,149.333333 L85.3333333,192 L170.666667,192 L170.666667,234.666667 L85.3333333,234.666667 L85.3333333,277.333333 L0,213.333333 L85.3333333,149.333333 Z M213.333333,0 L277.333333,85.3333333 L234.666667,85.3333333 L234.666667,170.666667 L192,170.666667 L192,85.3333333 L149.333333,85.3333333 L213.333333,0 Z\'/></g></svg>" },
-      { id: 3, tooltip: "Draw Line", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><defs><marker id='arrow' markerWidth='4' markerHeight='4' refX='3.5' refY='2' orient='auto'><path d='M0,0 L0,4 L4,2 z' fill='white'/></marker></defs><line x1='5' y1='19' x2='19' y2='5' stroke='white' stroke-width='2' stroke-linecap='round' marker-end='url(#arrow)'/></svg>" },
-      { id: 4, tooltip: "Ruler / Scale", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-ruler-icon'><path d='M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z'/><path d='m14.5 12.5 2-2'/><path d='m11.5 9.5 2-2'/><path d='m8.5 6.5 2-2'/><path d='m17.5 15.5 2-2'/></svg>" },
-      { id: 5, tooltip: "Switch Chart Type", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><line x1='6' y1='4' x2='6' y2='20'/><rect x='4.5' y='8' width='3' height='8'/><line x1='12' y1='2' x2='12' y2='22'/><rect x='10.5' y='6' width='3' height='12'/><line x1='18' y1='4' x2='18' y2='20'/><rect x='16.5' y='10' width='3' height='4'/></svg>" }
+      { id: 0, tooltip: "Reset zoom", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 20 20'><g fill='none' stroke='white' stroke-linecap='round' stroke-linejoin='round' transform='matrix(0 1 1 0 2.5 2.5)'><path d='m3.98 1.08c-2.38 1.38-3.98 3.97-3.98 6.92 0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8'/><path d='m4 1v4h-4' transform='matrix(1 0 0 -1 0 6)'/></g></svg>" },
+      { id: 1, tooltip: "Zoom Area", icon: "<svg xmlns=\'http://www.w3.org/2000/svg\' fill=\'${this.#colors.deActiveTools}\' width=\'18\' height=\'18\' viewBox=\'2 2 30 30\' id=\'icon\'><path d=\'M31,29.5859l-4.6885-4.6884a8.028,8.028,0,1,0-1.414,1.414L29.5859,31ZM20,26a6,6,0,1,1,6-6A6.0066,6.0066,0,0,1,20,26Z\'/><path d=\'M8,26H4a2.0021,2.0021,0,0,1-2-2V20H4v4H8Z\'/><rect x=\'2\' y=\'12\' width=\'2\' height=\'4\'/><path d=\'M26,8H24V4H20V2h4a2.0021,2.0021,0,0,1,2,2Z\'/><rect x=\'12\' y=\'2\' width=\'4\' height=\'2\'/><path d=\'M4,8H2V4A2.0021,2.0021,0,0,1,4,2H8V4H4Z\'/><rect id=\'_Transparent_Rectangle_\' data-name=\'&lt;Transparent Rectangle&gt;\' fill=\'none\' width=\'32\' height=\'32\'/></svg>'" },
+      { id: 2, tooltip: "Pan chart", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='21' height='21' viewBox='0 0 512 512' fill='white'><path d='M234.6 256v85.3h42.7L213.3 426.6 149.3 341.3H192V256ZM341.3 149.3l85.3 64-85.3 64v-42.7H256V192h85.3ZM85.3 149.3V192h85.3v42.7H85.3v42.7L0 213.3ZM213.3 0l64 85.3h-42.7v85.3H192V85.3h-42.7Z'/></svg>" },
+      { id: 3, tooltip: "Draw trend line", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24'><line x1='5' y1='19' x2='19' y2='5' stroke='white' stroke-width='2' stroke-linecap='round'/></svg>" },
+      { id: 4, tooltip: "Measure Move", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-ruler-icon'><path d='M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z'/><path d='m14.5 12.5 2-2'/><path d='m11.5 9.5 2-2'/><path d='m8.5 6.5 2-2'/><path d='m17.5 15.5 2-2'/></svg>" },
+      { id: 5, tooltip: "Switch Chart Type", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><line x1='6' y1='4' x2='6' y2='20'/><rect x='4.5' y='8' width='3' height='8'/><line x1='12' y1='2' x2='12' y2='22'/><rect x='10.5' y='6' width='3' height='12'/><line x1='18' y1='4' x2='18' y2='20'/><rect x='16.5' y='10' width='3' height='4'/></svg>" },
+      { id: 6, tooltip: "Share chart", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' stroke='white' fill='none' stroke-width='2'><circle cx='18' cy='5' r='3'/><circle cx='6' cy='12' r='3'/><circle cx='18' cy='19' r='3'/><line x1='8.6' y1='13.5' x2='15.4' y2='17.5'/><line x1='15.4' y1='6.5' x2='8.6' y2='10.5'/></svg>" }
     ];
 
-    // render buttons
     const container = d3.select(`#${this.#objectIDs.toolsBtnsContainer}`);
+
+    const attachTooltip = (el, text) => {
+      const tooltip = el.append('div')
+        .text(text)
+        .style('position', 'absolute')
+        .style('bottom', '-28px')
+        .style('background', '#111')
+        .style('color', '#fff')
+        .style('padding', '4px 8px')
+        .style('font-size', '11px')
+        .style('border-radius', '4px')
+        .style('white-space', 'nowrap')
+        .style('opacity', 0)
+        .style('pointer-events', 'none')
+        .style('transition', '0.15s ease');
+
+      el.on('mouseenter', () => tooltip.style('opacity', 1))
+        .on('mouseleave', () => tooltip.style('opacity', 0));
+    };
 
     btns.forEach(btn => {
       const el = container.append('div')
@@ -604,9 +662,16 @@ class CandleStickChart {
         .style('position', 'relative')
         .html(btn.icon);
 
-      el.append('title').text(btn.tooltip);
+      attachTooltip(el, btn.tooltip);
+
+      if (btn.id === 6) {
+        el.on('click', () => {
+          navigator.clipboard.writeText(window.location.href);
+        });
+      }
     });
   }
+
 
 
   #modeHandler(mode) {
@@ -618,9 +683,11 @@ class CandleStickChart {
     const btn2 = `#${this.#objectIDs.toolsBtnsContainer} #tools-btn-2`;
     const btn3 = `#${this.#objectIDs.toolsBtnsContainer} #tools-btn-3`;
     const btn4 = `#${this.#objectIDs.toolsBtnsContainer} #tools-btn-4`;
+    const btn5 = `#${this.#objectIDs.toolsBtnsContainer} #tools-btn-5`;
+    const btn6 = `#${this.#objectIDs.toolsBtnsContainer} #tools-btn-6`;
 
     // 🆕 Updated: Added btn4 in reset loop
-    [btn0, btn1, btn2, btn3, btn4].forEach((selector) => {
+    [btn0, btn1, btn2, btn3, btn4, btn5, btn6].forEach((selector) => {
       if (!document.querySelector(selector)) return;
       const svg = document.querySelector(`${selector} svg g g`) || document.querySelector(`${selector} svg`);
       svg?.setAttribute('fill', this.#colors.deActiveTools);
@@ -1552,6 +1619,13 @@ class CandleStickChart {
       'click',
       function (e, d) {
         thisProxy.toggleChartMode();
+      }
+    );
+
+    d3.select(`#${this.#objectIDs.toolsBtnsContainer} #tools-btn-6`).on(
+      'click',
+      function (e, d) {
+        thisProxy.shareChartScreenshot();
       }
     );
 

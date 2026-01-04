@@ -13,6 +13,7 @@ import FileUpload from './Onboarding/FileUpload';
 import SelectBroker from './Onboarding/SelectBroker';
 import Profile from './profile/Profile';
 import History from './History/History';
+import SubscriptionPlans from './Subscription/SubscriptionPlans';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route path="/upload-file" element={<FileUpload />} />
           <Route path="/select-broker" element={<SelectBroker />} />
           <Route path="/profile" element={<Profile/>} />
+          <Route path="/pricing" element={<SubscriptionPlans/>} />
         </Routes>
       </Router>
 

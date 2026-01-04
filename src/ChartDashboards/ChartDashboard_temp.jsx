@@ -39,6 +39,8 @@ const Chart = ({ fromHistory, symbol, trades, onReady }) => {
       try {
         setLoading(true);
 
+        const vizId = localStorage.getItem("viz_id");
+
         const res = await axios.post(
           `${ENV.BASE_API_URL}/api/visualize/`,
           JSON.parse(stableTrades),
@@ -47,7 +49,10 @@ const Chart = ({ fromHistory, symbol, trades, onReady }) => {
               Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
               "Content-Type": "application/json"
             },
-            params: { fromHistory }
+            params: {
+              fromHistory,
+              visualization_id: vizId,
+            }
           }
         );
 

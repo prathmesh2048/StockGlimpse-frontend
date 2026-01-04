@@ -60,7 +60,6 @@ const Navbar = ({ isLandingPage = false }) => {
           <div className="hidden md:flex items-center gap-6">
             <a href="/" className={link}>Home</a>
             <a href="/" className={link}>About</a>
-            <a href="/" className={link}>Services</a>
 
             {!loggedIn ? (
               <>
@@ -78,9 +77,18 @@ const Navbar = ({ isLandingPage = false }) => {
                 <a href="/history" className={link}>History</a>
                 <a href="/profile" className={link}>Profile</a>
                 {/* Added Coins Link */}
-                <a className={link}>
-                  <Coins className="w-4 h-4 text-yellow-400" /> {user.coins} Coins
+                <a className={`${link} flex items-center gap-2`}>
+                  <Coins className="w-4 h-4 text-yellow-400" />
+
+                  {user?.has_unlimited_coins ? (
+                    <span className="text-lg font-bold text-yellow-400">∞</span>
+                  ) : (
+                    <span className="text-sm font-bold text-yellow-400">
+                      {user?.coins}
+                    </span>
+                  )}
                 </a>
+
                 <button onClick={handleSignout} className="text-red-400 hover:text-red-300 text-sm">
                   Logout
                 </button>
@@ -99,7 +107,6 @@ const Navbar = ({ isLandingPage = false }) => {
           <div className="md:hidden bg-[#0f172a] border-t border-white/10 px-6 py-4 flex flex-col gap-3">
             <a href="/" className={link}>Home</a>
             <a href="/about" className={link}>About</a>
-            <a href="/services" className={link}>Services</a>
 
             {!loggedIn ? (
               <>

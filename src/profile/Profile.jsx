@@ -1,57 +1,50 @@
 import React from "react";
-import "./Profile.css";
 import Navbar from "../Navbar/Navbar";
+import useUser from "../hooks/useUser";
+import { Puff } from "react-loader-spinner";
 
 export default function Profile() {
+    const { user, loading } = useUser();
+
+    if (loading) {
+        return (
+            <>
+                <Navbar solidBackground />
+                <div className="flex justify-center items-center h-[70vh]">
+                    <Puff color="#6366F1" size={60} />
+                </div>
+            </>
+        );
+    }
 
     return (
         <>
-            <Navbar solidBackground={true} />
+            <Navbar solidBackground />
 
-            <div className="profile-container">
+            <div className="max-w-xl mx-auto mt-10 px-4">
+                <h2 className="text-2xl font-semibold mb-6">Profile</h2>
 
-                <h2 className="profile-title">Profile</h2>
-
-                <div className="profile-card">
-                    {/* Name + Profile Picture */}
-                    <div className="profile-row">
-                        <div className="profile-label">Name</div>
-                        <div className="profile-value profile-name-with-pic">
-                            <img
-                                src="/images/sea-lion.png"
-                                alt="Profile"
-                                className="profile-pic"
-                            />
-                            <span>Prathmesh Ajay Nandurkar</span>
-                        </div>
+                <div className="bg-white rounded-xl shadow-md p-6 space-y-4">
+                    {/* First Name */}
+                    <div className="flex justify-between border-b pb-3">
+                        <span className="text-gray-500">First Name</span>
+                        <span className="font-medium">{user?.first_name || "-"}</span>
                     </div>
 
-                    {/* Phone */}
-                    <div className="profile-row">
-                        <div className="profile-label">Phone Number</div>
-                        <div className="profile-value">+91 7769933725</div>
+                    {/* Last Name */}
+                    <div className="flex justify-between border-b pb-3">
+                        <span className="text-gray-500">Last Name</span>
+                        <span className="font-medium">{user?.last_name || "-"}</span>
                     </div>
 
                     {/* Email */}
-                    <div className="profile-row">
-                        <div className="profile-label">Email</div>
-                        <div className="profile-value">
-                            <div className="profile-main">prathmeshnandurkar123@gmail.com</div>
-                            <div className="profile-sub">This is your unique ID</div>
-                        </div>
-                    </div>
-
-                    {/* Username */}
-                    <div className="profile-row">
-                        <div className="profile-label">Username</div>
-                        <div className="profile-value">@pratnand763</div>
+                    <div className="flex justify-between">
+                        <span className="text-gray-500">Email</span>
+                        <span className="font-medium">{user?.email || "-"}</span>
                     </div>
                 </div>
-
-
-
             </div>
-
         </>
-    )
+    );
 }
+
