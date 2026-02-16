@@ -8,7 +8,7 @@ import { filter } from 'd3';
 
 
 
-const FileUpload = ({onDataUpload}) => {
+const FileUpload = ({ selected_broker = "zerodha", onDataUpload }) => {
 
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 B'
@@ -124,7 +124,9 @@ const FileUpload = ({onDataUpload}) => {
       const res = await axios.post(
         `${ENV.BASE_API_URL}/api/upload-trades/`,
         formData,
+
         {
+          params: { broker: selected_broker },
           headers: {
             Authorization: `Bearer ${localStorage.getItem('jwtToken')}`,
             'Content-Type': 'multipart/form-data',

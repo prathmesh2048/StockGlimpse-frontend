@@ -28,7 +28,10 @@ export default function SelectBroker() {
 
 
     const brokers = [
-        { id: "zerodha", name: "Zerodha", logo: "/images/Zerodha_logo.svg" }
+        { id: "groww", name: "groww", logo: "/images/grow.png" },
+        { id: "zerodha", name: "zerodha", logo: "/images/Zerodha_logo.svg" },
+        { id: "angleone", name: "angleone", logo: "/images/angleone_logo.png" }
+        
     ];
 
     const handleSelect = (broker) => {
@@ -52,7 +55,7 @@ export default function SelectBroker() {
                                 key={broker.id}
                                 className="broker-card"
                                 onClick={() => handleSelect(broker)}>
-                                <img src={broker.logo} alt={broker.name} />
+                                <img width={300} height={300} src={broker.logo} alt={broker.name} />
                             </div>
                         ))}
                     </div>
@@ -66,7 +69,7 @@ export default function SelectBroker() {
                         onClick={(e) => e.stopPropagation()}>
                         <button className="modal-close" onClick={handleCloseModal}>❌</button>
                         <h2>Upload trades for {selectedBroker.name}</h2>
-                        <FileUpload onDataUpload={handleDataUpload} />
+                        <FileUpload selected_broker={selectedBroker.name} onDataUpload={handleDataUpload} />
                     </div>
                 </div>
             )}
