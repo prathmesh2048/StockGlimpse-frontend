@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import "./LoginPage.css";
 import { setToken } from '../utils/auth';
 import LoginButton from "./LoginButton";
@@ -102,9 +102,9 @@ const SignupPage = () => {
                 style={{ cursor: "pointer" }}
               >
                 {showPassword ? (
-                  <img class="eye-icon" src="/images/open.png" alt="eye open" /> // Open eye icon
+                  <img class="eye-icon" src={process.env.PUBLIC_URL + "/images/open.png"} alt="eye open" /> // Open eye icon
                 ) : (
-                  <img class="eye-icon" src="/images/close.png" alt="eye closed" /> // Closed eye icon
+                  <img class="eye-icon"src={process.env.PUBLIC_URL + "/images/close.png"} alt="eye closed" /> // Closed eye icon
                 )}
               </span>
             </div>
@@ -119,9 +119,9 @@ const SignupPage = () => {
         {errorMessage && <p className="error-message">{errorMessage}</p>}
         <p className="login-link">
           Already have an account?{" "}
-          <a href="/login" className="login-link-text">
+          <Link to="/login" className="login-link-text">
             Login here
-          </a>
+          </Link>
         </p>
       </div>
     </div>

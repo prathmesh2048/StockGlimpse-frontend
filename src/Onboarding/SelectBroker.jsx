@@ -31,7 +31,7 @@ export default function SelectBroker() {
         { id: "groww", name: "groww", logo: "/images/grow.png" },
         { id: "zerodha", name: "zerodha", logo: "/images/Zerodha_logo.svg" },
         { id: "angleone", name: "angleone", logo: "/images/angleone_logo.png" }
-        
+
     ];
 
     const handleSelect = (broker) => {
@@ -55,7 +55,7 @@ export default function SelectBroker() {
                                 key={broker.id}
                                 className="broker-card"
                                 onClick={() => handleSelect(broker)}>
-                                <img width={300} height={300} src={broker.logo} alt={broker.name} />
+                                <img width={300} height={300} src={process.env.PUBLIC_URL + broker.logo} alt={broker.name} />
                             </div>
                         ))}
                     </div>

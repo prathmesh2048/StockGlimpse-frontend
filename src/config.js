@@ -1,6 +1,6 @@
 const ENV = {
-    BASE_API_URL: "http://localhost:8000", 
-    GOOGLE_OAUTH2_CLIENT_ID: "8508696341-tdn7jeri24m3alb8dou1nmljj9gq0f22.apps.googleusercontent.com"
-  };
-  
+  BASE_API_URL: process.env.REACT_APP_BASE_API_URL,
+  GOOGLE_OAUTH2_CLIENT_ID: process.env.REACT_APP_GOOGLE_OAUTH2_CLIENT_ID
+};
+
 export default ENV;

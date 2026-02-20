@@ -118,8 +118,8 @@ export const modifyAnnotationEnd = (group, colors) => {
         .attr(
           "href",
           d3.select(this.parentNode).datum().data.transactionType === "buy"
-            ? "/images/B.png"
-            : "/images/S.png",
+            ? process.env.PUBLIC_URL + "/images/B.png"
+            :process.env.PUBLIC_URL + "/images/S.png",
         )
         .attr("pointer-events", "none");
     });

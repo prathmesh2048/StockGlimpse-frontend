@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-// Added "Coins" to the imports
+import { useNavigate, Link } from "react-router-dom";
 import { Menu, X, CandlestickChart, Coins } from "lucide-react";
 import useUser from "../hooks/useUser";
 import { clearToken } from "../utils/auth";
@@ -31,23 +30,28 @@ const Navbar = ({ isLandingPage = false }) => {
     navigate("/");
   };
 
-  const link = "text-slate-300 hover:text-white transition text-sm font-medium flex items-center gap-1.5";
+  const link =
+    "text-slate-300 hover:text-white transition text-sm font-medium flex items-center gap-1.5";
 
   return (
     <>
       {!isLandingPage && <div className="h-16" />}
 
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all ${!isLandingPage
-          ? "bg-gradient-to-tr from-[#01141a] to-[#01222c] border-b border-white/10"
-          : scrolled
+        className={`fixed top-0 left-0 right-0 z-50 transition-all ${
+          !isLandingPage
+            ? "bg-gradient-to-tr from-[#01141a] to-[#01222c] border-b border-white/10"
+            : scrolled
             ? "bg-[#0f172a]/90 backdrop-blur-md border-b border-white/10"
             : "bg-transparent"
-          }`}
+        }`}
       >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
-          <div onClick={() => navigate("/")} className="flex items-center gap-2 cursor-pointer">
+          <div
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 cursor-pointer"
+          >
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <CandlestickChart className="w-5 h-5 text-white" />
             </div>
@@ -58,12 +62,12 @@ const Navbar = ({ isLandingPage = false }) => {
 
           {/* Desktop */}
           <div className="hidden md:flex items-center gap-6">
-            <a href="/" className={link}>Home</a>
-            <a href="/" className={link}>About</a>
+            <Link to="/" className={link}>Home</Link>
+            <Link to="/" className={link}>About</Link>
 
             {!loggedIn ? (
               <>
-                <a href="/login" className={link}>Login</a>
+                <Link to="/login" className={link}>Login</Link>
                 <button
                   onClick={() => navigate("/signup")}
                   className="bg-blue-600 px-4 py-2 rounded-lg text-white text-sm font-semibold"
@@ -73,13 +77,11 @@ const Navbar = ({ isLandingPage = false }) => {
               </>
             ) : (
               <>
+                <Link to="/history" className={link}>History</Link>
+                <Link to="/profile" className={link}>Profile</Link>
 
-                <a href="/history" className={link}>History</a>
-                <a href="/profile" className={link}>Profile</a>
-                {/* Added Coins Link */}
-                <a className={`${link} flex items-center gap-2`}>
+                <div className={`${link} cursor-default`}>
                   <Coins className="w-4 h-4 text-yellow-400" />
-
                   {user?.has_unlimited_coins ? (
                     <span className="text-lg font-bold text-yellow-400">∞</span>
                   ) : (
@@ -87,9 +89,12 @@ const Navbar = ({ isLandingPage = false }) => {
                       {user?.coins}
                     </span>
                   )}
-                </a>
+                </div>
 
-                <button onClick={handleSignout} className="text-red-400 hover:text-red-300 text-sm">
+                <button
+                  onClick={handleSignout}
+                  className="text-red-400 hover:text-red-300 text-sm"
+                >
                   Logout
                 </button>
               </>
@@ -97,7 +102,10 @@ const Navbar = ({ isLandingPage = false }) => {
           </div>
 
           {/* Mobile toggle */}
-          <button onClick={() => setOpen(!open)} className="md:hidden text-slate-300">
+          <button
+            onClick={() => setOpen(!open)}
+            className="md:hidden text-slate-300"
+          >
             {open ? <X /> : <Menu />}
           </button>
         </div>
@@ -105,12 +113,12 @@ const Navbar = ({ isLandingPage = false }) => {
         {/* Mobile menu */}
         {open && (
           <div className="md:hidden bg-[#0f172a] border-t border-white/10 px-6 py-4 flex flex-col gap-3">
-            <a href="/" className={link}>Home</a>
-            <a href="/about" className={link}>About</a>
+            <Link to="/" className={link}>Home</Link>
+            <Link to="/about" className={link}>About</Link>
 
             {!loggedIn ? (
               <>
-                <a href="/login" className={link}>Login</a>
+                <Link to="/login" className={link}>Login</Link>
                 <button
                   onClick={() => navigate("/signup")}
                   className="w-full bg-blue-600 py-2 rounded-lg text-white font-semibold"
@@ -120,13 +128,13 @@ const Navbar = ({ isLandingPage = false }) => {
               </>
             ) : (
               <>
-                <a href="/temp" className={link}>Charts</a>
-                <a href="/profile" className={link}>Profile</a>
-                {/* Added Coins Link Mobile */}
-                <a href="/coins" className={link}>
-                  <Coins className="w-4 h-4 text-yellow-400" />{user.coins} Coins
-                </a>
-                <button onClick={handleSignout} className="text-red-400 text-left">
+                <Link to="/temp" className={link}>Charts</Link>
+                <Link to="/profile" className={link}>Profile</Link>
+
+                <button
+                  onClick={handleSignout}
+                  className="text-red-400 text-left"
+                >
                   Logout
                 </button>
               </>

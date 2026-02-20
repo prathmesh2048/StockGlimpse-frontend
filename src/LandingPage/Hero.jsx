@@ -85,7 +85,7 @@ const Hero = ({ isLoggedIn }) => {
                         {/* IMAGE CONTAINER - Replaces generated content */}
                         {/* NOTE: I have used a placeholder image below. Please replace the 'src' with your actual screenshot URL or import path */}
                         <img
-                            src="/images/product_demo.png"
+                            src={process.env.PUBLIC_URL + "/images/product_demo.png"}
                             alt="Trade Visualization Chart Dashboard"
                             className="w-full h-full object-cover"
                         />

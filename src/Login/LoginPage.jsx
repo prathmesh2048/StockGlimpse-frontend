@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import ENV from "../config"; // import your config file
 import "./LoginPage.css";
 import LoginButton from "./LoginButton";
@@ -97,9 +97,9 @@ const LoginPage = () => {
                                 style={{ cursor: "pointer" }}
                             >
                                 {showPassword ? (
-                                    <img class="eye-icon" src="/images/open.png" alt="eye open" /> // Open eye icon
+                                    <img class="eye-icon" src={process.env.PUBLIC_URL + "/images/open.png"} alt="eye open" /> // Open eye icon
                                 ) : (
-                                    <img class="eye-icon" src="/images/close.png" alt="eye closed" /> // Closed eye icon
+                                    <img class="eye-icon" src={process.env.PUBLIC_URL + "/images/close.png"} alt="eye closed" /> // Closed eye icon
                                 )}
                             </span>
                         </div>
@@ -109,9 +109,9 @@ const LoginPage = () => {
                     </button>
                 </form>
                 <p className="signup-link">
-                    <a href="/forgot-password" className="signup-link-text">
+                    <Link to="/forgot-password" className="signup-link-text">
                         Forgot your password?
-                    </a>
+                    </Link>
                 </p>
 
                 <br />
@@ -120,9 +120,9 @@ const LoginPage = () => {
                 </div>
                 <p className="signup-link">
                     Don't have an account?{" "}
-                    <a href="/signup" className="signup-link-text">
+                    <Link to="/signup" className="signup-link-text">
                         Sign up here
-                    </a>
+                    </Link>
                 </p>
             </div>
         </div>

@@ -21,7 +21,7 @@ const HeroSection = () => (
     </div>
 
     <img
-      src="/images/cover.png"
+      src={process.env.PUBLIC_URL + "/images/cover.png"}
       alt="Stock Market Visual"
       className="max-w-[45%] hidden md:block"
     />

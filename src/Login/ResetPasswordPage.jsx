@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import ENV from "../config";
 import "./LoginPage.css";
 
@@ -74,9 +74,9 @@ const ResetPasswordPage = () => {
                                 style={{ cursor: "pointer" }}
                             >
                                 {showPassword ? (
-                                    <img className="eye-icon" src="/images/open.png" alt="eye open" /> // Open eye icon
+                                    <img class="eye-icon" src={process.env.PUBLIC_URL + "/images/open.png"} alt="eye open" /> // Open eye icon
                                 ) : (
-                                    <img className="eye-icon" src="/images/close.png" alt="eye closed" /> // Closed eye icon
+                                    <img className="eye-icon" src={process.env.PUBLIC_URL + "/images/close.png"} alt="eye closed" /> // Closed eye icon
                                 )}
                             </span>
                         </div>
@@ -87,9 +87,9 @@ const ResetPasswordPage = () => {
                 </form>
                 <p className="signup-link">
                     Remembered your password?{" "}
-                    <a href="/login" className="signup-link-text">
+                    <Link to="/login" className="signup-link-text">
                         Go back to Login
-                    </a>
+                    </Link>
                 </p>
             </div>
         </div>

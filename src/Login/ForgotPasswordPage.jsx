@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import ENV from "../config"; 
 import "./LoginPage.css";
 
@@ -53,9 +54,9 @@ const ForgotPasswordPage = () => {
                 </form>
                 <p className="signup-link">
                     Remembered your password?{" "}
-                    <a href="/login" className="signup-link-text">
+                    <Link to="/login" className="signup-link-text">
                         Go back to Login
-                    </a>
+                    </Link>
                 </p>
             </div>
         </div>

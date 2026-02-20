@@ -17,7 +17,7 @@ import SubscriptionPlans from './Subscription/SubscriptionPlans';
 
 function App() {
   return (
-      <Router>
+      <Router basename={process.env.NODE_ENV === 'production' ? '/StockGlimpse-frontend' : '/'}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/chart-screen" element={<ChartScreen />} /> 
