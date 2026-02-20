@@ -3,8 +3,9 @@ import ENV from "../config";
 import { useNavigate } from "react-router-dom";
 import { setToken } from '../utils/auth';
 
-const OneTapLogin = () => {
-
+const OneTapLogin = ({ onLoginSuccess }) => {
+  
+  console.log("OneTapLogin rendered, onSuccess:", onLoginSuccess);
   const navigate = useNavigate();
 
   useGoogleOneTapLogin({
@@ -31,6 +32,7 @@ const OneTapLogin = () => {
           setToken(jwtToken);
           navigate('/');
           console.log("JWT token saved:", jwtToken);
+          onLoginSuccess?.();
         } else {
           console.error('JWT token not found in response');
         }

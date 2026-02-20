@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Navbar from "../Navbar/Navbar";
 import Footer from "./Footer";
 import OneTapLogin from "../Login/oneTapLogin";
@@ -9,14 +9,19 @@ import HowItWorks from "./HowItWorks";
 
 const LandingPage = () => {
 
-  const isLoggedIn = !!getToken();
+  const [isLoggedIn, setIsLoggedIn] = useState(!!getToken());
+  console.log("LandingPage rendered, isLoggedIn:", isLoggedIn);
 
   return (
     <div className="bg-[#020617] min-h-screen">
       <Navbar isLandingPage={true} />
       <Hero isLoggedIn={isLoggedIn} />
       <HowItWorks />
-      {isLoggedIn ? <RecentVisualizations /> : <OneTapLogin />}
+      {isLoggedIn ? (
+        <RecentVisualizations />
+      ) : (
+        <OneTapLogin onLoginSuccess={() => setIsLoggedIn(true)} />
+      )}
       <Footer />
     </div>
   );
