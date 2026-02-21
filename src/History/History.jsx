@@ -17,7 +17,7 @@ export default function History() {
                 const res = await axios.get(
                     `${ENV.BASE_API_URL}/api/recent-visualizations/`,
                     {
-                        params: { all: true },
+                        params: { all: false },
                         headers: {
                             Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
                         },
