@@ -34,15 +34,12 @@ const Hero = ({ isLoggedIn }) => {
 
                 {/* EXACT HEADLINE */}
                 <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6 max-w-5xl leading-[1.1]">
-                    See your trades on the chart <br />
-                    <span className="text-transparent md:text-5xl bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-blue-400 animate-gradient-x">
-                        Spot late entries and early exits instantly
-                    </span>
+                    See Trades Not Spreadsheets <br />
                 </h1>
 
                 {/* EXACT SUBHEADLINE */}
                 <p className="text-lg md:text-xl text-slate-400 mb-10 max-w-3xl leading-relaxed">
-                    Visualize every trade on the chart, note your decisions, and clearly see what actually impacted your profits.
+                    Every trade on the chart, Every decision explained.
                 </p>
 
                 {/* Buttons */}

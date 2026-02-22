@@ -1,4 +1,5 @@
 import * as d3 from 'd3';
+import domtoimage from 'dom-to-image-more';
 import {
   annotation,
   annotationLabel,
@@ -133,42 +134,272 @@ class CandleStickChart {
   async shareChartScreenshot() {
     const element = document.querySelector(".stockChartCard");
     if (!element) return;
-
-    try {
-      // capture screenshot
-      const canvas = await html2canvas(element, {
-        backgroundColor: "#0b1220", // match your dark UI
-        scale: 2, // sharper image
-        useCORS: true
-      });
-
-      const blob = await new Promise((resolve) =>
-        canvas.toBlob(resolve, "image/png")
-      );
-
-      const file = new File([blob], "trade-chart.png", {
-        type: "image/png"
-      });
-
-      // Web Share API
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: "My Trade Visualization",
-          text: "Visualizing my trades on the chart",
-          files: [file]
-        });
-      } else {
-        // fallback: download image
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "trade-chart.png";
-        a.click();
-        URL.revokeObjectURL(url);
+  
+    const toolbar = document.getElementById(this.#objectIDs.toolsBtnsContainer);
+    const dropdown = document.getElementById(`${this.#objectIDs.toolsBtnsContainer}-dropdown`);
+  
+    // ── Inject !important overrides ───────────────────────
+    const styleTag = document.createElement("style");
+    styleTag.id = "screenshot-override";
+    styleTag.textContent = `
+      .stockChartCard,
+      .stockChartCard *,
+      .stockChartBody,
+      .stockChartBody > div,
+      .stockChartBody > div > div,
+      [class*="ChartDashboard"] {
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        background-color: #0b1220 !important;
+        padding: 0 !important;
+        margin: 0 !important;
       }
+      .stockChartHeader {
+        padding: 8px 12px !important;
+      }
+    `;
+    document.head.appendChild(styleTag);
+  
+    if (toolbar) toolbar.style.visibility = "hidden";
+    if (dropdown) dropdown.style.visibility = "hidden";
+  
+    // ── Flash scoped to card ──────────────────────────────
+    const rect = element.getBoundingClientRect();
+    const flash = document.createElement("div");
+    flash.style.cssText = `
+      position: fixed;
+      top: ${rect.top}px;
+      left: ${rect.left}px;
+      width: ${rect.width}px;
+      height: ${rect.height}px;
+      background: white;
+      z-index: 99999;
+      opacity: 0;
+      pointer-events: none;
+      border-radius: 8px;
+      transition: opacity 0.08s ease;
+    `;
+    document.body.appendChild(flash);
+    requestAnimationFrame(() => {
+      flash.style.opacity = "0.6";
+      setTimeout(() => {
+        flash.style.opacity = "0";
+        setTimeout(() => flash.remove(), 200);
+      }, 80);
+    });
+  
+    await new Promise(r => setTimeout(r, 50));
+  
+    try {
+      const blob = await domtoimage.toBlob(element, {
+        bgcolor: "#0b1220",
+        scale: 2,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+      });
+  
+      const imageUrl = URL.createObjectURL(blob);
+      this.#showShareModal(imageUrl, blob);
+  
     } catch (err) {
-      console.error("Share failed:", err);
+      console.error("Capture failed:", err);
+      this.#showToast("❌ Capture failed");
+    } finally {
+      styleTag.remove();
+      if (toolbar) toolbar.style.visibility = "visible";
+      if (dropdown) dropdown.style.visibility = "visible";
     }
+  }
+
+  #showShareModal(imageUrl, blob) {
+
+    // ── Inject animations once ────────────────────────────
+    if (!document.getElementById("share-modal-styles")) {
+      const style = document.createElement("style");
+      style.id = "share-modal-styles";
+      style.textContent = `
+        @keyframes smFadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes smSlideUp { from { transform: translateY(30px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // ── Backdrop ──────────────────────────────────────────
+    const backdrop = document.createElement("div");
+    backdrop.style.cssText = `
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 99998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: smFadeIn 0.2s ease;
+    `;
+
+    // ── Modal ─────────────────────────────────────────────
+    const modal = document.createElement("div");
+    modal.style.cssText = `
+      background: #0d1b2a;
+      border: 1px solid #1e3048;
+      border-radius: 16px;
+      padding: 20px;
+      width: 480px;
+      max-width: 95vw;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+      animation: smSlideUp 0.25s ease;
+      font-family: sans-serif;
+    `;
+
+    // ── Header ────────────────────────────────────────────
+    const header = document.createElement("div");
+    header.style.cssText = `
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    `;
+    header.innerHTML = `
+      <span style="color:#fff; font-size:15px; font-weight:600;">📸 Share Your Trade</span>
+      <span id="share-modal-close" style="color:#888; font-size:20px; cursor:pointer; line-height:1; transition: color 0.15s;">✕</span>
+    `;
+
+    // ── Screenshot preview ────────────────────────────────
+    const img = document.createElement("img");
+    img.src = imageUrl;
+    img.style.cssText = `
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #1e3048;
+      margin-bottom: 16px;
+      display: block;
+    `;
+
+    // ── Share buttons ─────────────────────────────────────
+    const btnRow = document.createElement("div");
+    btnRow.style.cssText = `
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    `;
+
+    const makeBtn = (label, icon, bg, action) => {
+      const btn = document.createElement("button");
+      btn.style.cssText = `
+        flex: 1;
+        min-width: 100px;
+        padding: 10px 12px;
+        background: ${bg};
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        font-family: sans-serif;
+        font-weight: 500;
+        transition: opacity 0.15s;
+      `;
+      btn.innerHTML = `${icon} ${label}`;
+      btn.onmouseenter = () => btn.style.opacity = "0.85";
+      btn.onmouseleave = () => btn.style.opacity = "1";
+      btn.onclick = action;
+      return btn;
+    };
+
+    // ── Download button ───────────────────────────────────
+    btnRow.appendChild(makeBtn("Download", "📥", "#1e3a4a", () => {
+      const a = document.createElement("a");
+      a.href = imageUrl;
+      a.download = "trade-chart.jpg";
+      a.click();
+      this.#showToast("📥 Downloaded!");
+    }));
+
+    // ── Copy to clipboard button ──────────────────────────
+    btnRow.appendChild(makeBtn("Copy Image", "📋", "#1e3a2f", async () => {
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ "image/png": blob })
+        ]);
+        this.#showToast("📋 Copied! Paste into Twitter, Discord, anywhere.");
+      } catch {
+        this.#showToast("❌ Clipboard not supported in this browser");
+      }
+    }));
+
+    // ── Native share (mobile only) ────────────────────────
+    const file = new File([blob], "trade-chart.png", { type: "image/png" });
+    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+    if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
+      btnRow.appendChild(makeBtn("Share", "🔗", "#1a2a4a", async () => {
+        try {
+          await navigator.share({
+            title: "My Trade",
+            text: "Check out my trade! 📈",
+            files: [file]
+          });
+        } catch (err) {
+          console.error("Share failed:", err);
+        }
+      }));
+    }
+
+    // ── Assemble ──────────────────────────────────────────
+    modal.appendChild(header);
+    modal.appendChild(img);
+    modal.appendChild(btnRow);
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+
+    // ── Close handlers ────────────────────────────────────
+    const close = () => {
+      backdrop.remove();
+      URL.revokeObjectURL(imageUrl);
+    };
+
+    const closeBtn = document.getElementById("share-modal-close");
+    closeBtn.onmouseenter = () => closeBtn.style.color = "#fff";
+    closeBtn.onmouseleave = () => closeBtn.style.color = "#888";
+    closeBtn.onclick = close;
+    backdrop.onclick = (e) => { if (e.target === backdrop) close(); };
+  }
+
+  #showToast(message) {
+    const existing = document.getElementById(`${this.id}-toast`);
+    if (existing) existing.remove();
+
+    const toast = document.createElement("div");
+    toast.id = `${this.id}-toast`;
+    toast.textContent = message;
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e3a2f;
+      color: #22d3ee;
+      border: 1px solid #22d3ee;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: sans-serif;
+      z-index: 99999;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      opacity: 1;
+      transition: opacity 0.4s ease;
+    `;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      setTimeout(() => toast.remove(), 400);
+    }, 2500);
   }
 
   setData(newData) {
@@ -599,40 +830,46 @@ class CandleStickChart {
   }
 
   #createToolsBtns() {
-
     d3.select(`#${this.#objectIDs.toolsBtnsContainer}`).remove();
 
-    d3.select(`#${this.id}`)
+    const container = d3.select(`#${this.id}`)
       .append('div')
       .attr('id', this.#objectIDs.toolsBtnsContainer)
       .style('display', 'flex')
-      .style('height', '60px')
+      .style('align-items', 'center')
+      .style('justify-content', 'flex-end')
+      .style('gap', '8px')
+      .style('height', '44px')
       .style('pointer-events', 'none')
-      .style('justify-content', 'end')
-      .style('gap', '10px')
-      .style(
-        'padding-right',
-        window.innerWidth > this.#config.mobileBreakPoint ? '10px' : '0'
-      )
+      .style('padding-right', '12px')
       .style('position', 'relative');
 
-    const btns = [
-      { id: 0, tooltip: "Reset zoom", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 20 20'><g fill='none' stroke='white' stroke-linecap='round' stroke-linejoin='round' transform='matrix(0 1 1 0 2.5 2.5)'><path d='m3.98 1.08c-2.38 1.38-3.98 3.97-3.98 6.92 0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8'/><path d='m4 1v4h-4' transform='matrix(1 0 0 -1 0 6)'/></g></svg>" },
-      { id: 1, tooltip: "Zoom Area", icon: "<svg xmlns=\'http://www.w3.org/2000/svg\' fill=\'${this.#colors.deActiveTools}\' width=\'18\' height=\'18\' viewBox=\'2 2 30 30\' id=\'icon\'><path d=\'M31,29.5859l-4.6885-4.6884a8.028,8.028,0,1,0-1.414,1.414L29.5859,31ZM20,26a6,6,0,1,1,6-6A6.0066,6.0066,0,0,1,20,26Z\'/><path d=\'M8,26H4a2.0021,2.0021,0,0,1-2-2V20H4v4H8Z\'/><rect x=\'2\' y=\'12\' width=\'2\' height=\'4\'/><path d=\'M26,8H24V4H20V2h4a2.0021,2.0021,0,0,1,2,2Z\'/><rect x=\'12\' y=\'2\' width=\'4\' height=\'2\'/><path d=\'M4,8H2V4A2.0021,2.0021,0,0,1,4,2H8V4H4Z\'/><rect id=\'_Transparent_Rectangle_\' data-name=\'&lt;Transparent Rectangle&gt;\' fill=\'none\' width=\'32\' height=\'32\'/></svg>'" },
-      { id: 2, tooltip: "Pan chart", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='21' height='21' viewBox='0 0 512 512' fill='white'><path d='M234.6 256v85.3h42.7L213.3 426.6 149.3 341.3H192V256ZM341.3 149.3l85.3 64-85.3 64v-42.7H256V192h85.3ZM85.3 149.3V192h85.3v42.7H85.3v42.7L0 213.3ZM213.3 0l64 85.3h-42.7v85.3H192V85.3h-42.7Z'/></svg>" },
-      { id: 3, tooltip: "Draw trend line", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24'><line x1='5' y1='19' x2='19' y2='5' stroke='white' stroke-width='2' stroke-linecap='round'/></svg>" },
-      { id: 4, tooltip: "Measure Move", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-ruler-icon'><path d='M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z'/><path d='m14.5 12.5 2-2'/><path d='m11.5 9.5 2-2'/><path d='m8.5 6.5 2-2'/><path d='m17.5 15.5 2-2'/></svg>" },
-      { id: 5, tooltip: "Switch Chart Type", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><line x1='6' y1='4' x2='6' y2='20'/><rect x='4.5' y='8' width='3' height='8'/><line x1='12' y1='2' x2='12' y2='22'/><rect x='10.5' y='6' width='3' height='12'/><line x1='18' y1='4' x2='18' y2='20'/><rect x='16.5' y='10' width='3' height='4'/></svg>" },
-      { id: 6, tooltip: "Share chart", icon: "<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' stroke='white' fill='none' stroke-width='2'><circle cx='18' cy='5' r='3'/><circle cx='6' cy='12' r='3'/><circle cx='18' cy='19' r='3'/><line x1='8.6' y1='13.5' x2='15.4' y2='17.5'/><line x1='15.4' y1='6.5' x2='8.6' y2='10.5'/></svg>" }
-    ];
+    d3.select(`#${this.id}`).style('position', 'relative');
 
-    const container = d3.select(`#${this.#objectIDs.toolsBtnsContainer}`);
+    // ── Helper to create a standalone icon button ──────────
+    const makeIconBtn = (id, icon, tooltip) => {
+      const btn = container.append('div')
+        .attr('id', id)
+        .style('display', 'flex')
+        .style('align-items', 'center')
+        .style('justify-content', 'center')
+        .style('width', '34px')
+        .style('height', '34px')
+        .style('background', '#0f1923')
+        .style('border', '1px solid #2a3a4a')
+        .style('border-radius', '6px')
+        .style('cursor', 'pointer')
+        .style('pointer-events', 'auto')
+        .style('position', 'relative')
+        .html(icon);
 
-    const attachTooltip = (el, text) => {
-      const tooltip = el.append('div')
-        .text(text)
+      // Tooltip
+      const tip = btn.append('div')
+        .text(tooltip)
         .style('position', 'absolute')
         .style('bottom', '-28px')
+        .style('left', '50%')
+        .style('transform', 'translateX(-50%)')
         .style('background', '#111')
         .style('color', '#fff')
         .style('padding', '4px 8px')
@@ -641,33 +878,157 @@ class CandleStickChart {
         .style('white-space', 'nowrap')
         .style('opacity', 0)
         .style('pointer-events', 'none')
-        .style('transition', '0.15s ease');
+        .style('transition', '0.15s ease')
+        .style('z-index', '9999');
 
-      el.on('mouseenter', () => tooltip.style('opacity', 1))
-        .on('mouseleave', () => tooltip.style('opacity', 0));
+      btn.on('mouseenter', () => tip.style('opacity', 1))
+        .on('mouseleave', () => tip.style('opacity', 0));
+
+      return btn;
     };
 
-    btns.forEach(btn => {
-      const el = container.append('div')
-        .attr('id', `tools-btn-${btn.id}`)
-        .style('width', '28px')
-        .style('height', '28px')
-        .style('border', `1px solid ${this.#colors.deActiveTools}`)
-        .style('border-radius', '4px')
-        .style('cursor', 'pointer')
+    // ── Reset Zoom (always visible) ────────────────────────
+    makeIconBtn(
+      'tools-btn-reset',
+      `<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 20 20'>
+        <g fill='none' stroke='white' stroke-linecap='round' stroke-linejoin='round' transform='matrix(0 1 1 0 2.5 2.5)'>
+          <path d='m3.98 1.08c-2.38 1.38-3.98 3.97-3.98 6.92 0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8'/>
+          <path d='m4 1v4h-4' transform='matrix(1 0 0 -1 0 6)'/>
+        </g>
+      </svg>`,
+      'Reset Zoom'
+    );
+
+    // ── Switch Chart Type (always visible) ────────────────
+    makeIconBtn(
+      'tools-btn-chartmode',
+      this.#getChartTypeIcon(),
+      'Switch Chart Type'
+    );
+
+    // ── Hamburger button ───────────────────────────────────
+    const hamburgerBtn = makeIconBtn(
+      'tools-btn-hamburger',
+      `<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' 
+        fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>
+        <line x1='3' y1='6' x2='21' y2='6'/>
+        <line x1='3' y1='12' x2='21' y2='12'/>
+        <line x1='3' y1='18' x2='21' y2='18'/>
+      </svg>`,
+      'More Tools'
+    );
+
+    // ── Dropdown panel ─────────────────────────────────────
+    const menuItems = [
+      {
+        id: 'zoom',
+        label: 'Zoom Area',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="2 2 30 30" fill="currentColor">
+                <path d="M31,29.5859l-4.6885-4.6884a8.028,8.028,0,1,0-1.414,1.414L29.5859,31ZM20,26a6,6,0,1,1,6-6A6.0066,6.0066,0,0,1,20,26Z"/>
+                <path d="M8,26H4a2.0021,2.0021,0,0,1-2-2V20H4v4H8Z"/>
+                <rect x="2" y="12" width="2" height="4"/>
+                <path d="M26,8H24V4H20V2h4a2.0021,2.0021,0,0,1,2,2Z"/>
+                <rect x="12" y="2" width="4" height="2"/>
+                <path d="M4,8H2V4A2.0021,2.0021,0,0,1,4,2H8V4H4Z"/>
+              </svg>`
+      },
+      {
+        id: 'pan',
+        label: 'Pan Chart',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 512 512" fill="currentColor">
+                <path d="M234.6 256v85.3h42.7L213.3 426.6 149.3 341.3H192V256ZM341.3 149.3l85.3 64-85.3 64v-42.7H256V192h85.3ZM85.3 149.3V192h85.3v42.7H85.3v42.7L0 213.3ZM213.3 0l64 85.3h-42.7v85.3H192V85.3h-42.7Z"/>
+              </svg>`
+      },
+      {
+        id: 'draw',
+        label: 'Draw Tools',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" 
+                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1='5' y1='19' x2='19' y2='5'/>
+              </svg>`
+      },
+      {
+        id: 'measure',
+        label: 'Measure Move',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" 
+                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/>
+                <path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/>
+                <path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/>
+              </svg>`
+      },
+      {
+        id: 'share',
+        label: 'Share / Download',
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" 
+                stroke="currentColor" fill="none" stroke-width="2">
+                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                <line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/>
+                <line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/>
+              </svg>`
+      },
+    ];
+
+    const dropdown = d3.select(`#${this.id}`)
+      .append('div')
+      .attr('id', `${this.#objectIDs.toolsBtnsContainer}-dropdown`)
+      .style('position', 'absolute')
+      .style('top', '44px')
+      .style('right', '12px')
+      .style('background', '#0d1b2a')
+      .style('border', '1px solid #1e3048')
+      .style('border-radius', '8px')
+      .style('padding', '6px 0')
+      .style('min-width', '200px')
+      .style('z-index', '9999')
+      .style('display', 'none')
+      .style('box-shadow', '0 8px 24px rgba(0,0,0,0.5)')
+      .style('pointer-events', 'auto');
+
+    menuItems.forEach(item => {
+      const row = dropdown.append('div')
+        .attr('id', `tools-menu-${item.id}`)
         .style('display', 'flex')
-        .style('pointer-events', 'auto')
-        .style('justify-content', 'center')
         .style('align-items', 'center')
-        .style('position', 'relative')
-        .html(btn.icon);
+        .style('gap', '12px')
+        .style('padding', '9px 18px')
+        .style('cursor', 'pointer')
+        .style('color', '#ccc')
+        .style('font-size', '13px')
+        .style('font-family', 'sans-serif')
+        .style('transition', 'background 0.15s');
 
-      attachTooltip(el, btn.tooltip);
+      row.on('mouseover', function () {
+        d3.select(this).style('background', '#162033').style('color', '#fff');
+      }).on('mouseout', function () {
+        d3.select(this).style('background', 'transparent').style('color', '#ccc');
+      });
 
-      if (btn.id === 6) {
-        el.on('click', () => {
-          navigator.clipboard.writeText(window.location.href);
-        });
+      row.append('span')
+        .style('display', 'flex')
+        .style('align-items', 'center')
+        .style('opacity', '0.75')
+        .html(item.icon);
+
+      row.append('span').text(item.label);
+    });
+
+    // Toggle dropdown
+    let isOpen = false;
+    hamburgerBtn.on('click', () => {
+      isOpen = !isOpen;
+      dropdown.style('display', isOpen ? 'block' : 'none');
+      hamburgerBtn.style('border-color', isOpen ? '#3b82f6' : '#2a3a4a');
+    });
+
+    // Close on outside click
+    d3.select('body').on(`click.menu-${this.id}`, (e) => {
+      const node = dropdown.node();
+      const btn = hamburgerBtn.node();
+      if (node && !node.contains(e.target) && !btn.contains(e.target)) {
+        isOpen = false;
+        dropdown.style('display', 'none');
+        hamburgerBtn.style('border-color', '#2a3a4a');
       }
     });
   }
@@ -1580,54 +1941,31 @@ class CandleStickChart {
       }
     });
 
-    d3.select(`#${this.#objectIDs.toolsBtnsContainer} #tools-btn-0`).on(
-      'click',
-      function (e, d) {
-        thisProxy.#handleResetZoom();
-      }
-    );
+    d3.select(`#${this.#objectIDs.toolsBtnsContainer} #tools-btn-reset`)
+      .on('click', () => this.#handleResetZoom());
 
-    d3.select(`#${this.#objectIDs.toolsBtnsContainer} #tools-btn-1`).on(
-      'click',
-      function (e, d) {
-        thisProxy.#modeHandler('zoom');
-      }
-    );
+    d3.select(`#${this.#objectIDs.toolsBtnsContainer} #tools-btn-chartmode`)
+      .on('click', () => {
+        this.toggleChartMode();
+        // Refresh the icon after toggle
+        d3.select(`#${this.#objectIDs.toolsBtnsContainer} #tools-btn-chartmode`)
+          .html(this.#getChartTypeIcon());
+      });
 
-    d3.select(`#${this.#objectIDs.toolsBtnsContainer} #tools-btn-2`).on(
-      'click',
-      function (e, d) {
-        thisProxy.#modeHandler('pan');
-      }
-    );
+    d3.select(`#${this.#objectIDs.toolsBtnsContainer}-dropdown #tools-menu-zoom`)
+      .on('click', () => { this.#modeHandler('zoom'); this.#closeMenu(); });
 
-    d3.select(`#${this.#objectIDs.toolsBtnsContainer} #tools-btn-3`).on(
-      'click',
-      function (e, d) {
-        thisProxy.#modeHandler('draw');
-      }
-    );
+    d3.select(`#${this.#objectIDs.toolsBtnsContainer}-dropdown #tools-menu-pan`)
+      .on('click', () => { this.#modeHandler('pan'); this.#closeMenu(); });
 
-    d3.select(`#${this.#objectIDs.toolsBtnsContainer} #tools-btn-4`).on(
-      'click',
-      function (e, d) {
-        thisProxy.#modeHandler('measure');
-      }
-    );
+    d3.select(`#${this.#objectIDs.toolsBtnsContainer}-dropdown #tools-menu-draw`)
+      .on('click', () => { this.#modeHandler('draw'); this.#closeMenu(); });
 
-    d3.select(`#${this.#objectIDs.toolsBtnsContainer} #tools-btn-5`).on(
-      'click',
-      function (e, d) {
-        thisProxy.toggleChartMode();
-      }
-    );
+    d3.select(`#${this.#objectIDs.toolsBtnsContainer}-dropdown #tools-menu-measure`)
+      .on('click', () => { this.#modeHandler('measure'); this.#closeMenu(); });
 
-    d3.select(`#${this.#objectIDs.toolsBtnsContainer} #tools-btn-6`).on(
-      'click',
-      function (e, d) {
-        thisProxy.shareChartScreenshot();
-      }
-    );
+    d3.select(`#${this.#objectIDs.toolsBtnsContainer}-dropdown #tools-menu-share`)
+      .on('click', () => { this.shareChartScreenshot(); this.#closeMenu(); });
 
 
     let zoom = d3.zoom().on('zoom', function (e) {
@@ -1640,6 +1978,10 @@ class CandleStickChart {
       .on('touchstart.zoom', null)
       .on('touchmove.zoom', null)
       .on('touchend.zoom', null);
+  }
+
+  #closeMenu() {
+    d3.select(`#${this.#objectIDs.toolsBtnsContainer}-dropdown`).style('display', 'none');
   }
 
   #removeEventListeners() {
@@ -1717,11 +2059,13 @@ class CandleStickChart {
     let winX = width * 0.1;
     let winWidth = width * 0.12;
 
-    const handleWidth = 5;
+    const handleW = 5;
     const handleHeight = height * 0.2;
     const handleYOffset = (height - handleHeight) / 2;
-    const minWidth = handleWidth * 2 + 6;
+    const minWidth = handleW * 2 + 6;
     const closeSize = 14;
+    const gripDotR = 1.8;
+    const gripSpacing = 6;
 
     // top layer
     let brushLayer = svg.select(`#${this.id}-brush-layer`);
@@ -1741,31 +2085,82 @@ class CandleStickChart {
       .attr("stroke", "#888")
       .attr("cursor", "grab");
 
-    // handles
-    const leftHandle = brushLayer.append("rect")
-      .attr("y", handleYOffset)
-      .attr("width", handleWidth)
-      .attr("height", handleHeight)
-      .attr("fill", "rgba(228,228,20,0.9)")
-      .attr("stroke", "#888")
-      .attr("cursor", "ew-resize");
+    // ── Left Handle ───────────────────────────────────────
+    const leftHandleGroup = brushLayer.append("g")
+      .attr("class", "brush-handle-left")
+      .style("cursor", "ew-resize");
 
-    const rightHandle = brushLayer.append("rect")
+    leftHandleGroup.append("rect")
       .attr("y", handleYOffset)
-      .attr("width", handleWidth)
+      .attr("width", handleW)
       .attr("height", handleHeight)
-      .attr("fill", "rgba(228,228,20,0.9)")
-      .attr("stroke", "#888")
-      .attr("cursor", "ew-resize");
+      .attr("rx", 3)
+      .attr("fill", "rgba(34, 211, 238, 0.85)")
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 0.5);
 
-    // close button
+    [-gripSpacing, 0, gripSpacing].forEach(offset => {
+      leftHandleGroup.append("circle")
+        .attr("r", gripDotR)
+        .attr("cx", handleW / 2)
+        .attr("cy", handleYOffset + handleHeight / 2 + offset)
+        .attr("fill", "rgba(0,0,0,0.5)");
+    });
+
+    leftHandleGroup
+      .on("mouseenter", function () {
+        d3.select(this).select("rect")
+          .attr("fill", "rgba(34, 211, 238, 1)")
+          .attr("stroke-width", 1.5);
+      })
+      .on("mouseleave", function () {
+        d3.select(this).select("rect")
+          .attr("fill", "rgba(34, 211, 238, 0.85)")
+          .attr("stroke-width", 0.5);
+      });
+
+    // ── Right Handle ──────────────────────────────────────
+    const rightHandleGroup = brushLayer.append("g")
+      .attr("class", "brush-handle-right")
+      .style("cursor", "ew-resize");
+
+    rightHandleGroup.append("rect")
+      .attr("y", handleYOffset)
+      .attr("width", handleW)
+      .attr("height", handleHeight)
+      .attr("rx", 3)
+      .attr("fill", "rgba(34, 211, 238, 0.85)")
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 0.5);
+
+    [-gripSpacing, 0, gripSpacing].forEach(offset => {
+      rightHandleGroup.append("circle")
+        .attr("r", gripDotR)
+        .attr("cx", handleW / 2)
+        .attr("cy", handleYOffset + handleHeight / 2 + offset)
+        .attr("fill", "rgba(0,0,0,0.5)");
+    });
+
+    rightHandleGroup
+      .on("mouseenter", function () {
+        d3.select(this).select("rect")
+          .attr("fill", "rgba(34, 211, 238, 1)")
+          .attr("stroke-width", 1.5);
+      })
+      .on("mouseleave", function () {
+        d3.select(this).select("rect")
+          .attr("fill", "rgba(34, 211, 238, 0.85)")
+          .attr("stroke-width", 0.5);
+      });
+
+    // ── Close Button ──────────────────────────────────────
     const closeBtn = brushLayer.append("g")
       .attr("cursor", "pointer")
       .on("pointerdown", e => e.stopPropagation())
       .on("click", () => {
         this.#isPnLWindowClosed = true;
-        brushLayer.remove()
-        this.draw(); // redraw to remove brush
+        brushLayer.remove();
+        this.draw();
       });
 
     closeBtn.append("circle")
@@ -1782,6 +2177,7 @@ class CandleStickChart {
     brushLayer.selectAll("*")
       .on("pointerdown", e => e.stopPropagation());
 
+    // ── Update ────────────────────────────────────────────
     const update = () => {
       winX = Math.round(winX);
       winWidth = Math.round(winWidth);
@@ -1790,24 +2186,20 @@ class CandleStickChart {
         .attr("x", winX)
         .attr("width", winWidth);
 
-      leftHandle.attr("x", winX - handleWidth / 2);
-      rightHandle.attr("x", winX + winWidth - handleWidth / 2);
+      leftHandleGroup.attr("transform", `translate(${winX - handleW / 2}, 0)`);
+      rightHandleGroup.attr("transform", `translate(${winX + winWidth - handleW / 2}, 0)`);
 
       closeBtn.attr(
         "transform",
         `translate(${winX + winWidth - closeSize / 2 - 4},${closeSize / 2 + 4})`
       );
 
-      // Drawing Gradient Area Inside Brush Window
       drawBrushGradient(winX, winWidth, brushLayer, this.getChartData(), this.getAnnotationsData(), this.#objectIDs.svgId, this.getXScaleFunc(), this.getYScaleFunc());
     };
 
     update();
 
-    // Drawing Gradient Area Inside Brush Window
-    drawBrushGradient(winX, winWidth, brushLayer, this.getChartData(), this.getAnnotationsData(), this.#objectIDs.svgId, this.getXScaleFunc(), this.getYScaleFunc());
-
-    // drag window
+    // ── Drag: Window ──────────────────────────────────────
     windowRect.call(
       d3.drag()
         .on("start", e => e.sourceEvent.stopPropagation())
@@ -1817,8 +2209,8 @@ class CandleStickChart {
         })
     );
 
-    // left handle drag
-    leftHandle.call(
+    // ── Drag: Left Handle ─────────────────────────────────
+    leftHandleGroup.call(
       d3.drag()
         .on("start", e => e.sourceEvent.stopPropagation())
         .on("drag", e => {
@@ -1829,8 +2221,8 @@ class CandleStickChart {
         })
     );
 
-    // right handle drag
-    rightHandle.call(
+    // ── Drag: Right Handle ────────────────────────────────
+    rightHandleGroup.call(
       d3.drag()
         .on("start", e => e.sourceEvent.stopPropagation())
         .on("drag", e => {
