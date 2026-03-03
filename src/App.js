@@ -14,6 +14,7 @@ import SelectBroker from './Onboarding/SelectBroker';
 import Profile from './profile/Profile';
 import History from './History/History';
 import SubscriptionPlans from './Subscription/SubscriptionPlans';
+import Analytics from './Analytics/analytics';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route path="/select-broker" element={<SelectBroker />} />
           <Route path="/profile" element={<Profile/>} />
           <Route path="/pricing" element={<SubscriptionPlans/>} />
+          <Route path="/analytics" element={<Analytics />} />
         </Routes>
       </Router>
 

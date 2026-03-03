@@ -7,9 +7,11 @@ import {
   annotationCustomType,
   annotationCalloutRect
 } from 'd3-svg-annotation';
-import html2canvas from "html2canvas";
 
-import { colors, config, getCursorPoint, parseDate, modifyAnnotationEnd } from './CandleStickChartUtils.js';
+import axios from 'axios';
+import ENV from "../config"; // import your config file
+
+import { colors, config, getCursorPoint, parseDate, modifyAnnotationEnd, createToolsBtns } from './CandleStickChartUtils.jsx';
 import { placeWithoutOverlap, drawBrushGradient } from './Utils';
 
 class CandleStickChart {
@@ -47,6 +49,41 @@ class CandleStickChart {
   #isPnLWindowClosed = false;
   #lineData = [];
   #rightOffsetFactor = 0.40;
+  #snrLevels = [];
+  #srLevelsFetching = false;
+
+  #candlePattern = null;
+  #candlePatternFetching = false;
+  #candlePatternActive = false;
+
+
+  #ema9 = null;
+  #ema21 = null;
+  #ema50 = null;
+  #ema200 = null;
+
+  // ── Panel layout ─────────────────────────────────────
+  // Heights are fractions of the total SVG height
+  #PRICE_RATIO = 0.70;
+  #VOLUME_RATIO = 0.15;
+  #RSI_RATIO = 0.15;
+  #PANEL_GAP = 4; // px gap between panels
+
+
+  // Toggles for additional panels (volume, RSI)
+  #showVolume = false;
+  #showRSI = false;
+
+  // Derived pixel heights (set in #calculatePanelHeights)
+  #priceH = 0;
+  #volumeH = 0;
+  #rsiH = 0;
+  #volumeTop = 0; // Y offset where volume panel starts
+  #rsiTop = 0; // Y offset where RSI panel starts
+  #totalSvgH = 0; // full SVG height covering all panels
+
+  // RSI data
+  #rsiData = [];
 
 
   constructor(width, height, data, stockAnnotationsData, id, theme = "dark") {
@@ -87,6 +124,82 @@ class CandleStickChart {
     this.#modeHandler('pan');
     this.#chartMode = 'line';
     this.#annotationCache = this.#annotationCache || new Map();
+    this.#rsiData = this.#calculateRSI(14);
+
+    document.getElementById(this.id)?.addEventListener('ema-toggle', (e) => {
+      const { period, active } = e.detail;
+
+      if (active) {
+        // Temporarily use full data for EMA calculation for accuracy
+        const savedFiltered = this.#filteredData;
+        this.#filteredData = this.data;
+        const emaData = this.#calculateEMA(period);
+        this.#filteredData = savedFiltered;
+
+        if (period === 9) this.#ema9 = emaData;
+        if (period === 21) this.#ema21 = emaData;
+        if (period === 50) this.#ema50 = emaData;
+        if (period === 200) this.#ema200 = emaData;
+
+      } else {
+        if (period === 9) this.#ema9 = null;
+        if (period === 21) this.#ema21 = null;
+        if (period === 50) this.#ema50 = null;
+        if (period === 200) this.#ema200 = null;
+      }
+
+      this.#drawEMALines();   // ← just redraw lines, no full chart redraw
+    });
+
+    document.getElementById(this.id)?.addEventListener("ailevels-toggle", () => {
+
+      if (!this.#snrLevels || this.#snrLevels.length === 0) {
+
+        if (this.#srLevelsFetching) return; // already fetching, ignore click
+        this.#fetchSRLevels();
+
+      } else if (d3.select(`#${this.#objectIDs.svgId}`).selectAll('.sr-level').empty()) {
+        this.#drawSRLevels();
+      } else {
+        d3.select(`#${this.#objectIDs.svgId}`).selectAll('.sr-level').remove();
+      }
+    });
+
+
+    document.getElementById(this.id)?.addEventListener("volume-toggle", () => {
+      this.#showVolume = !this.#showVolume;
+      this.draw();
+    });
+
+    document.getElementById(this.id)?.addEventListener("rsi-toggle", () => {
+      this.#showRSI = !this.#showRSI;
+      this.draw();
+    });
+
+    document.getElementById(id)?.addEventListener("candle-pattern-toggle", () => {
+
+    });
+
+    document.getElementById(id)?.addEventListener("candle-pattern-toggle", () => {
+      if (!this.#candlePattern || this.#candlePattern.patterns?.length === 0) {
+        if (this.#candlePatternFetching) return;
+        this.#fetchCandlePattern();
+      } else if (this.#candlePatternActive) {
+        // Turn off
+        this.#candlePatternActive = false;
+        d3.select(`#${this.#objectIDs.svgId}`)
+          .selectAll('.candle-pattern-highlight')
+          .interrupt()
+          .style("stroke", null)
+          .style("filter", null)
+          .style("opacity", 1)
+          .classed("candle-pattern-highlight", false);
+      } else {
+        // Turn on
+        this.#candlePatternActive = true;
+        this.#highlightPatternCandles();
+      }
+    });
 
   }
 
@@ -134,10 +247,10 @@ class CandleStickChart {
   async shareChartScreenshot() {
     const element = document.querySelector(".stockChartCard");
     if (!element) return;
-  
+
     const toolbar = document.getElementById(this.#objectIDs.toolsBtnsContainer);
     const dropdown = document.getElementById(`${this.#objectIDs.toolsBtnsContainer}-dropdown`);
-  
+
     // ── Inject !important overrides ───────────────────────
     const styleTag = document.createElement("style");
     styleTag.id = "screenshot-override";
@@ -160,10 +273,10 @@ class CandleStickChart {
       }
     `;
     document.head.appendChild(styleTag);
-  
+
     if (toolbar) toolbar.style.visibility = "hidden";
     if (dropdown) dropdown.style.visibility = "hidden";
-  
+
     // ── Flash scoped to card ──────────────────────────────
     const rect = element.getBoundingClientRect();
     const flash = document.createElement("div");
@@ -188,9 +301,9 @@ class CandleStickChart {
         setTimeout(() => flash.remove(), 200);
       }, 80);
     });
-  
+
     await new Promise(r => setTimeout(r, 50));
-  
+
     try {
       const blob = await domtoimage.toBlob(element, {
         bgcolor: "#0b1220",
@@ -198,10 +311,10 @@ class CandleStickChart {
         width: element.scrollWidth,
         height: element.scrollHeight,
       });
-  
+
       const imageUrl = URL.createObjectURL(blob);
       this.#showShareModal(imageUrl, blob);
-  
+
     } catch (err) {
       console.error("Capture failed:", err);
       this.#showToast("❌ Capture failed");
@@ -405,6 +518,7 @@ class CandleStickChart {
   setData(newData) {
     this.data = newData;
     this.#filteredData = newData;
+    this.#rsiData = this.#calculateRSI(14);
     this.destroy()
     this.draw();
   }
@@ -437,7 +551,6 @@ class CandleStickChart {
   }
 
   #calculatePaddingLeft() {
-    console.log("this.#config.xLabelWidth ", this.#config.xLabelWidth);
     this.#config.paddingLeft = this.#config.xLabelWidth * 0.3;
   }
 
@@ -450,9 +563,33 @@ class CandleStickChart {
   }
 
   #calculateSvgHeight() {
-    this.#config.svgHeight =
-      this.#config.height -
-      (this.#config.paddingBottom + this.#config.paddingTop + 6);
+    const available = this.#config.height - (this.#config.paddingBottom + this.#config.paddingTop + 6);
+    const { price, vol, rsi } = this.#getPanelRatios();
+
+    this.#priceH = Math.floor(available * price) - (price < 1 ? this.#PANEL_GAP : 0);
+    this.#volumeH = Math.floor(available * vol) - (vol > 0 ? this.#PANEL_GAP : 0);
+    this.#rsiH = Math.floor(available * rsi);
+
+    this.#volumeTop = this.#showVolume ? this.#priceH + this.#PANEL_GAP * 2 : 0;
+    this.#rsiTop = this.#showRSI
+      ? (this.#showVolume ? this.#volumeTop + this.#volumeH + this.#PANEL_GAP * 2 : this.#priceH + this.#PANEL_GAP * 2)
+      : 0;
+
+    this.#totalSvgH = this.#priceH
+      + (this.#showVolume ? this.#volumeH + this.#PANEL_GAP * 2 : 0)
+      + (this.#showRSI ? this.#rsiH + this.#PANEL_GAP * 2 : 0);
+
+    this.#config.svgHeight = this.#priceH;
+  }
+
+  #getPanelRatios() {
+    const hasVol = this.#showVolume;
+    const hasRSI = this.#showRSI;
+
+    if (hasVol && hasRSI) return { price: 0.70, vol: 0.15, rsi: 0.15 };
+    if (hasVol && !hasRSI) return { price: 0.85, vol: 0.15, rsi: 0 };
+    if (!hasVol && hasRSI) return { price: 0.85, vol: 0, rsi: 0.15 };
+    return { price: 1.0, vol: 0, rsi: 0 };
   }
 
   #calculateXscale() {
@@ -548,23 +685,53 @@ class CandleStickChart {
   }
 
   #createLayout() {
-    d3.select(`#${this.id}`)
-      .style(
-        'padding',
-        `${this.#config.paddingTop}px ${this.#config.paddingRight}px ${this.#config.paddingBottom
-        }px ${this.#config.paddingLeft}px`
-      )
+    const svg = d3.select(`#${this.id}`)
+      .style('padding', `${this.#config.paddingTop}px ${this.#config.paddingRight}px ${this.#config.paddingBottom}px ${this.#config.paddingLeft}px`)
       .style('display', 'inline-block')
       .attr('width', this.#config.width)
       .attr('height', this.#config.height)
       .append('svg')
       .attr('width', this.#config.svgWidth)
-      .attr('height', this.#config.svgHeight)
+      .attr('height', this.#totalSvgH)
       .style('overflow', 'inherit')
       .style('cursor', 'crosshair')
-      .style('background-color', this.#colors.gridBackground) // backgroundColor
+      .style('background-color', this.#colors.gridBackground)
       .attr('id', this.#objectIDs.svgId)
       .style('margin-top', '-50px');
+
+    const sepColor = this.#colors.grid || '#2a3a4a';
+
+    // ── Volume panel separator + label (only if visible) ──
+    if (this.#showVolume) {
+      svg.append('line')
+        .attr('class', 'panel-separator')
+        .attr('x1', 0).attr('x2', this.#config.svgWidth)
+        .attr('y1', this.#volumeTop - 1).attr('y2', this.#volumeTop - 1)
+        .attr('stroke', sepColor).attr('stroke-width', 1).attr('opacity', 0.5);
+
+      svg.append('text')
+        .attr('class', 'panel-label')
+        .attr('x', 6).attr('y', this.#volumeTop + 12)
+        .attr('fill', this.#colors.tickColor || '#888')
+        .attr('font-size', '10px').attr('font-weight', '600')
+        .attr('font-family', 'monospace').text('VOL');
+    }
+
+    // ── RSI panel separator + label (only if visible) ─────
+    if (this.#showRSI) {
+      svg.append('line')
+        .attr('class', 'panel-separator')
+        .attr('x1', 0).attr('x2', this.#config.svgWidth)
+        .attr('y1', this.#rsiTop - 1).attr('y2', this.#rsiTop - 1)
+        .attr('stroke', sepColor).attr('stroke-width', 1).attr('opacity', 0.5);
+
+      svg.append('text')
+        .attr('class', 'panel-label')
+        .attr('x', 6).attr('y', this.#rsiTop + 12)
+        .attr('fill', this.#colors.tickColor || '#888')
+        .attr('font-size', '10px').attr('font-weight', '600')
+        .attr('font-family', 'monospace').text('RSI(14)');
+    }
   }
 
   #createYaxis() {
@@ -603,7 +770,7 @@ class CandleStickChart {
     let xAxis = d3
       .axisBottom(this.#xScaleFunc)
       .ticks(this.#config.svgWidth / 100)
-      .tickSize(this.#config.svgHeight);
+      .tickSize(this.#config.svgHeight); // only spans price panel
 
     d3.select(`#${this.#objectIDs.svgId}`)
       .append('g')
@@ -616,10 +783,7 @@ class CandleStickChart {
     );
 
     let gridColor = this.#colors.grid;
-    d3.selectAll(`#${this.#objectIDs.xAxisId} .tick line`).each(function (
-      d,
-      i
-    ) {
+    d3.selectAll(`#${this.#objectIDs.xAxisId} .tick line`).each(function (d, i) {
       this.style.stroke = gridColor;
     });
     d3.selectAll(`#${this.#objectIDs.xAxisId} .domain`).each(function (d, i) {
@@ -672,6 +836,7 @@ class CandleStickChart {
       .attr('y', window.innerWidth > this.#config.mobileBreakPoint ? 40 : 80)
       .style('fill', this.#colors.candleInfoText);
   }
+
   #createLockerGroup() {
     d3.select(`#${this.#objectIDs.svgId}`)
       .append('foreignObject')
@@ -829,211 +994,386 @@ class CandleStickChart {
     }
   }
 
-  #createToolsBtns() {
-    d3.select(`#${this.#objectIDs.toolsBtnsContainer}`).remove();
+  #calculateEMA(period) {
 
-    const container = d3.select(`#${this.id}`)
-      .append('div')
-      .attr('id', this.#objectIDs.toolsBtnsContainer)
-      .style('display', 'flex')
-      .style('align-items', 'center')
-      .style('justify-content', 'flex-end')
-      .style('gap', '8px')
-      .style('height', '44px')
-      .style('pointer-events', 'none')
-      .style('padding-right', '12px')
-      .style('position', 'relative');
+    const data = this.#filteredData;
+    const closes = data.map(d => d.Close);
+    const k = 2 / (period + 1);
+    const ema = [];
 
-    d3.select(`#${this.id}`).style('position', 'relative');
+    const seed = closes.slice(0, period).reduce((a, b) => a + b, 0) / period;
+    ema.push({ Date: data[period - 1].Date, value: seed });
 
-    // ── Helper to create a standalone icon button ──────────
-    const makeIconBtn = (id, icon, tooltip) => {
-      const btn = container.append('div')
-        .attr('id', id)
-        .style('display', 'flex')
-        .style('align-items', 'center')
-        .style('justify-content', 'center')
-        .style('width', '34px')
-        .style('height', '34px')
-        .style('background', '#0f1923')
-        .style('border', '1px solid #2a3a4a')
-        .style('border-radius', '6px')
-        .style('cursor', 'pointer')
-        .style('pointer-events', 'auto')
-        .style('position', 'relative')
-        .html(icon);
+    for (let i = period; i < closes.length; i++) {
+      const value = closes[i] * k + ema[ema.length - 1].value * (1 - k);
+      ema.push({ Date: data[i].Date, value });
+    }
 
-      // Tooltip
-      const tip = btn.append('div')
-        .text(tooltip)
-        .style('position', 'absolute')
-        .style('bottom', '-28px')
-        .style('left', '50%')
-        .style('transform', 'translateX(-50%)')
-        .style('background', '#111')
-        .style('color', '#fff')
-        .style('padding', '4px 8px')
-        .style('font-size', '11px')
-        .style('border-radius', '4px')
-        .style('white-space', 'nowrap')
-        .style('opacity', 0)
-        .style('pointer-events', 'none')
-        .style('transition', '0.15s ease')
-        .style('z-index', '9999');
+    return ema;
+  }
 
-      btn.on('mouseenter', () => tip.style('opacity', 1))
-        .on('mouseleave', () => tip.style('opacity', 0));
+  #drawEMALines() {
+    const svg = d3.select(`#${this.#objectIDs.svgId}`);
+    svg.selectAll('.ema-line').remove();
 
-      return btn;
-    };
-
-    // ── Reset Zoom (always visible) ────────────────────────
-    makeIconBtn(
-      'tools-btn-reset',
-      `<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 20 20'>
-        <g fill='none' stroke='white' stroke-linecap='round' stroke-linejoin='round' transform='matrix(0 1 1 0 2.5 2.5)'>
-          <path d='m3.98 1.08c-2.38 1.38-3.98 3.97-3.98 6.92 0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8'/>
-          <path d='m4 1v4h-4' transform='matrix(1 0 0 -1 0 6)'/>
-        </g>
-      </svg>`,
-      'Reset Zoom'
-    );
-
-    // ── Switch Chart Type (always visible) ────────────────
-    makeIconBtn(
-      'tools-btn-chartmode',
-      this.#getChartTypeIcon(),
-      'Switch Chart Type'
-    );
-
-    // ── Hamburger button ───────────────────────────────────
-    const hamburgerBtn = makeIconBtn(
-      'tools-btn-hamburger',
-      `<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' 
-        fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>
-        <line x1='3' y1='6' x2='21' y2='6'/>
-        <line x1='3' y1='12' x2='21' y2='12'/>
-        <line x1='3' y1='18' x2='21' y2='18'/>
-      </svg>`,
-      'More Tools'
-    );
-
-    // ── Dropdown panel ─────────────────────────────────────
-    const menuItems = [
-      {
-        id: 'zoom',
-        label: 'Zoom Area',
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="2 2 30 30" fill="currentColor">
-                <path d="M31,29.5859l-4.6885-4.6884a8.028,8.028,0,1,0-1.414,1.414L29.5859,31ZM20,26a6,6,0,1,1,6-6A6.0066,6.0066,0,0,1,20,26Z"/>
-                <path d="M8,26H4a2.0021,2.0021,0,0,1-2-2V20H4v4H8Z"/>
-                <rect x="2" y="12" width="2" height="4"/>
-                <path d="M26,8H24V4H20V2h4a2.0021,2.0021,0,0,1,2,2Z"/>
-                <rect x="12" y="2" width="4" height="2"/>
-                <path d="M4,8H2V4A2.0021,2.0021,0,0,1,4,2H8V4H4Z"/>
-              </svg>`
-      },
-      {
-        id: 'pan',
-        label: 'Pan Chart',
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 512 512" fill="currentColor">
-                <path d="M234.6 256v85.3h42.7L213.3 426.6 149.3 341.3H192V256ZM341.3 149.3l85.3 64-85.3 64v-42.7H256V192h85.3ZM85.3 149.3V192h85.3v42.7H85.3v42.7L0 213.3ZM213.3 0l64 85.3h-42.7v85.3H192V85.3h-42.7Z"/>
-              </svg>`
-      },
-      {
-        id: 'draw',
-        label: 'Draw Tools',
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" 
-                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1='5' y1='19' x2='19' y2='5'/>
-              </svg>`
-      },
-      {
-        id: 'measure',
-        label: 'Measure Move',
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" 
-                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/>
-                <path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/>
-                <path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/>
-              </svg>`
-      },
-      {
-        id: 'share',
-        label: 'Share / Download',
-        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" 
-                stroke="currentColor" fill="none" stroke-width="2">
-                <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
-                <line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/>
-                <line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/>
-              </svg>`
-      },
+    const emaColors = { 9: '#00bfff', 21: '#ffd700', 50: '#ff8c00', 200: '#ff4444' };
+    const emas = [
+      { period: 9, data: this.#ema9 },
+      { period: 21, data: this.#ema21 },
+      { period: 50, data: this.#ema50 },
+      { period: 200, data: this.#ema200 },
     ];
 
-    const dropdown = d3.select(`#${this.id}`)
-      .append('div')
-      .attr('id', `${this.#objectIDs.toolsBtnsContainer}-dropdown`)
-      .style('position', 'absolute')
-      .style('top', '44px')
-      .style('right', '12px')
-      .style('background', '#0d1b2a')
-      .style('border', '1px solid #1e3048')
-      .style('border-radius', '8px')
-      .style('padding', '6px 0')
-      .style('min-width', '200px')
-      .style('z-index', '9999')
-      .style('display', 'none')
-      .style('box-shadow', '0 8px 24px rgba(0,0,0,0.5)')
-      .style('pointer-events', 'auto');
+    const line = d3.line()
+      .x(d => this.#xScaleFunc(parseDate(d.Date)))
+      .y(d => this.#yScaleFunc(d.value))
+      .defined(d => d.value != null);
 
-    menuItems.forEach(item => {
-      const row = dropdown.append('div')
-        .attr('id', `tools-menu-${item.id}`)
-        .style('display', 'flex')
-        .style('align-items', 'center')
-        .style('gap', '12px')
-        .style('padding', '9px 18px')
-        .style('cursor', 'pointer')
-        .style('color', '#ccc')
-        .style('font-size', '13px')
-        .style('font-family', 'sans-serif')
-        .style('transition', 'background 0.15s');
+    emas.forEach(({ period, data }) => {
+      if (!data || data.length === 0) return;
 
-      row.on('mouseover', function () {
-        d3.select(this).style('background', '#162033').style('color', '#fff');
-      }).on('mouseout', function () {
-        d3.select(this).style('background', 'transparent').style('color', '#ccc');
-      });
-
-      row.append('span')
-        .style('display', 'flex')
-        .style('align-items', 'center')
-        .style('opacity', '0.75')
-        .html(item.icon);
-
-      row.append('span').text(item.label);
-    });
-
-    // Toggle dropdown
-    let isOpen = false;
-    hamburgerBtn.on('click', () => {
-      isOpen = !isOpen;
-      dropdown.style('display', isOpen ? 'block' : 'none');
-      hamburgerBtn.style('border-color', isOpen ? '#3b82f6' : '#2a3a4a');
-    });
-
-    // Close on outside click
-    d3.select('body').on(`click.menu-${this.id}`, (e) => {
-      const node = dropdown.node();
-      const btn = hamburgerBtn.node();
-      if (node && !node.contains(e.target) && !btn.contains(e.target)) {
-        isOpen = false;
-        dropdown.style('display', 'none');
-        hamburgerBtn.style('border-color', '#2a3a4a');
-      }
+      svg.append('path')
+        .attr('class', 'ema-line')
+        .attr('fill', 'none')
+        .attr('stroke', emaColors[period])
+        .attr('stroke-width', 1.5)
+        .attr('opacity', 0.85)
+        .attr('d', line(data));
     });
   }
 
+  #drawSRLevels() {
+    const svg = d3.select(`#${this.#objectIDs.svgId}`);
+    svg.selectAll('.sr-level').remove();
 
+    console.log("Drawing S/R levels:", this.#snrLevels);
+    if (!this.#snrLevels || this.#snrLevels.length === 0) return;
+
+    const xMin = this.#xScaleFunc(parseDate(this.#filteredData[0].Date));
+    const xMax = this.#xScaleFunc(parseDate(this.#filteredData[this.#filteredData.length - 1].Date));
+
+    // Get current price to determine support vs resistance
+    const currentPrice = this.#filteredData[this.#filteredData.length - 1].Close;
+
+    this.#snrLevels.forEach(price => {
+      const y = this.#yScaleFunc(price);
+      const isResistance = price > currentPrice;
+
+      // Line
+      svg.append('line')
+        .attr('class', 'sr-level')
+        .attr('x1', xMin)
+        .attr('x2', xMax)
+        .attr('y1', y)
+        .attr('y2', y)
+        .attr('stroke', isResistance ? '#ff4444' : '#00ff88')
+        .attr('stroke-width', 1)
+        .attr('stroke-dasharray', '4,3')
+        .attr('opacity', 0.7);
+
+      // Price label
+      svg.append('text')
+        .attr('class', 'sr-level')
+        .attr('x', xMax + 6)
+        .attr('y', y + 4)
+        .attr('fill', isResistance ? '#ff4444' : '#00ff88')
+        .attr('font-size', '11px')
+        .attr('font-family', 'sans-serif')
+        .text(price.toFixed(1));
+    });
+  }
+
+  #highlightPatternCandles() {
+    if (!this.#candlePattern?.patterns?.length) return;
+
+    const self = this; // capture reference
+
+    const patternDates = new Set(
+      this.#candlePattern.patterns
+        .filter(p => p.patterns?.length > 0 || p.score !== undefined)
+        .map(p => new Date(p.trade_time).toDateString())
+    );
+
+    const pulseCandle = (selection) => {
+      selection
+        .transition()
+        .duration(500)
+        .style("opacity", 0.25)
+        .transition()
+        .duration(500)
+        .style("opacity", 1)
+        .on("end", function () {
+          pulseCandle(d3.select(this));
+        });
+    };
+
+    d3.selectAll(`#${this.#objectIDs.candleContainerId} .candle`)
+      .each(function (d) {  // keep regular function so `this` = DOM element
+        const candleDate = new Date(d.Date).toDateString();
+        if (patternDates.has(candleDate)) {
+          const candle = d3.select(this); // `this` = the candle DOM element
+
+          const match = self.#candlePattern.patterns.find(  // use `self` for class
+            p => new Date(p.trade_time).toDateString() === candleDate
+          );
+
+          const score = match?.score ?? 50;
+          const highlightColor = score >= 70 ? "#00ff88"
+            : score >= 40 ? "#FFD700"
+              : "#ff4444";
+
+          candle.selectAll("rect")
+            .classed("candle-pattern-highlight", true)
+            .style("stroke", highlightColor)
+            .style("stroke-width", "2px")
+            .style("filter", `drop-shadow(0 0 4px ${highlightColor})`)
+            .call(pulseCandle);
+        }
+      });
+  }
+
+
+  #drawVolumeChart() {
+    const svg = d3.select(`#${this.#objectIDs.svgId}`);
+    svg.selectAll('.volume-bar, .volume-axis, .volume-zero-line').remove();
+
+    const data = this.#filteredData;
+    if (!data || data.length === 0) return;
+
+    const maxVolume = d3.max(data, d => d.Volume) || 1;
+    const yVol = d3.scaleLinear()
+      .domain([0, maxVolume])
+      .range([this.#volumeTop + this.#volumeH, this.#volumeTop]);
+
+    // Zero baseline
+    svg.append('line')
+      .attr('class', 'volume-zero-line')
+      .attr('x1', 0).attr('x2', this.#config.svgWidth)
+      .attr('y1', this.#volumeTop + this.#volumeH)
+      .attr('y2', this.#volumeTop + this.#volumeH)
+      .attr('stroke', this.#colors.grid || '#2a3a4a')
+      .attr('stroke-width', 1);
+
+    // Volume bars
+    data.forEach(d => {
+      const x = this.#xScaleFunc(parseDate(d.Date));
+      const isGreen = d.Close >= d.Open;
+      const barHeight = (this.#volumeTop + this.#volumeH) - yVol(d.Volume);
+      const barW = Math.max(1, this.#candleWidth);
+
+      svg.append('rect')
+        .attr('class', 'volume-bar')
+        .attr('x', x - barW / 2)
+        .attr('y', yVol(d.Volume))
+        .attr('width', barW)
+        .attr('height', Math.max(0, barHeight))
+        .attr('fill', isGreen ? '#26a69a' : '#ef5350')
+        .attr('opacity', 0.7);
+    });
+
+    // Y axis for volume (right side, 2-3 ticks)
+    const yVolAxis = d3.axisRight(yVol)
+      .ticks(3)
+      .tickSize(0)
+      .tickFormat(d => d >= 1e6 ? `${(d / 1e6).toFixed(1)}M` : d >= 1e3 ? `${(d / 1e3).toFixed(0)}K` : d);
+
+    svg.append('g')
+      .attr('class', 'volume-axis')
+      .attr('transform', `translate(${this.#config.svgWidth}, 0)`)
+      .call(yVolAxis)
+      .selectAll('text')
+      .style('fill', this.#colors.tickColor || '#888')
+      .style('font-size', '9px');
+
+    svg.select('.volume-axis .domain').remove();
+  }
+
+  #calculateRSI(period = 14) {
+    const data = this.data; // use full dataset for accurate RSI
+    if (data.length < period + 1) return [];
+
+    const closes = data.map(d => d.Close);
+    const rsi = [];
+
+    // Seed: first average gain/loss over `period` bars
+    let avgGain = 0;
+    let avgLoss = 0;
+    for (let i = 1; i <= period; i++) {
+      const change = closes[i] - closes[i - 1];
+      if (change >= 0) avgGain += change;
+      else avgLoss += Math.abs(change);
+    }
+    avgGain /= period;
+    avgLoss /= period;
+
+    const rs0 = avgLoss === 0 ? Infinity : avgGain / avgLoss;
+    rsi.push({ Date: data[period].Date, value: avgLoss === 0 ? 100 : 100 - 100 / (1 + rs0) });
+
+    // Wilder smoothing
+    for (let i = period + 1; i < closes.length; i++) {
+      const change = closes[i] - closes[i - 1];
+      const gain = change >= 0 ? change : 0;
+      const loss = change < 0 ? Math.abs(change) : 0;
+      avgGain = (avgGain * (period - 1) + gain) / period;
+      avgLoss = (avgLoss * (period - 1) + loss) / period;
+      const rs = avgLoss === 0 ? Infinity : avgGain / avgLoss;
+      rsi.push({ Date: data[i].Date, value: avgLoss === 0 ? 100 : 100 - 100 / (1 + rs) });
+    }
+
+    return rsi;
+  }
+
+  #drawRSIPanel() {
+    const svg = d3.select(`#${this.#objectIDs.svgId}`);
+    svg.selectAll('.rsi-element').remove();
+
+    const rsiData = this.#rsiData.filter(d => {
+      const t = parseDate(d.Date).getTime();
+      return t >= this.#zoomRange1 && t <= this.#zoomRange2;
+    });
+
+    if (!rsiData || rsiData.length < 2) return;
+
+    const panelTop = this.#rsiTop;
+    const panelH = this.#rsiH;
+
+    const yRsi = d3.scaleLinear()
+      .domain([0, 100])
+      .range([panelTop + panelH, panelTop]);
+
+    // ── Overbought / Oversold zones ───────────────────────
+    const zoneData = [
+      { y1: 30, y2: 0, fill: 'rgba(38,166,154,0.08)' },  // oversold zone
+      { y1: 100, y2: 70, fill: 'rgba(239,83,80,0.08)' },  // overbought zone
+    ];
+    zoneData.forEach(z => {
+      svg.append('rect')
+        .attr('class', 'rsi-element')
+        .attr('x', 0)
+        .attr('y', yRsi(z.y1))
+        .attr('width', this.#config.svgWidth)
+        .attr('height', yRsi(z.y2) - yRsi(z.y1))
+        .attr('fill', z.fill);
+    });
+
+    // ── Reference lines at 70, 50, 30 ───────────────────
+    [70, 50, 30].forEach(level => {
+      const y = yRsi(level);
+      svg.append('line')
+        .attr('class', 'rsi-element')
+        .attr('x1', 0).attr('x2', this.#config.svgWidth)
+        .attr('y1', y).attr('y2', y)
+        .attr('stroke', level === 50 ? (this.#colors.grid || '#2a3a4a') : (level === 70 ? '#ef5350' : '#26a69a'))
+        .attr('stroke-width', level === 50 ? 1 : 0.8)
+        .attr('stroke-dasharray', level === 50 ? '3,3' : '4,2')
+        .attr('opacity', 0.6);
+
+      svg.append('text')
+        .attr('class', 'rsi-element')
+        .attr('x', this.#config.svgWidth + 3)
+        .attr('y', y + 3)
+        .attr('fill', level === 70 ? '#ef5350' : level === 30 ? '#26a69a' : (this.#colors.tickColor || '#888'))
+        .attr('font-size', '9px')
+        .text(level);
+    });
+
+    // ── RSI line ──────────────────────────────────────────
+    const line = d3.line()
+      .x(d => this.#xScaleFunc(parseDate(d.Date)))
+      .y(d => yRsi(d.value))
+      .defined(d => d.value != null)
+      .curve(d3.curveMonotoneX);
+
+    svg.append('path')
+      .attr('class', 'rsi-element')
+      .attr('fill', 'none')
+      .attr('stroke', '#b388ff')
+      .attr('stroke-width', 1.5)
+      .attr('opacity', 0.9)
+      .attr('d', line(rsiData));
+
+    // ── Current RSI value label ───────────────────────────
+    const lastRsi = rsiData[rsiData.length - 1];
+    if (lastRsi) {
+      const rsiColor = lastRsi.value >= 70 ? '#ef5350' : lastRsi.value <= 30 ? '#26a69a' : '#b388ff';
+      svg.append('text')
+        .attr('class', 'rsi-element')
+        .attr('x', this.#config.svgWidth + 3)
+        .attr('y', yRsi(lastRsi.value) + 3)
+        .attr('fill', rsiColor)
+        .attr('font-size', '9px')
+        .attr('font-weight', '700')
+        .text(lastRsi.value.toFixed(1));
+    }
+
+    // ── Y axis ────────────────────────────────────────────
+    const yRsiAxis = d3.axisRight(yRsi)
+      .tickValues([30, 50, 70])
+      .tickSize(0);
+
+    svg.append('g')
+      .attr('class', 'rsi-element')
+      .attr('transform', `translate(${this.#config.svgWidth}, 0)`)
+      .call(yRsiAxis)
+      .selectAll('text').remove(); // labels already drawn above
+
+    svg.select('.rsi-element.domain').remove();
+  }
+
+  #createToolsBtns() {
+
+    createToolsBtns({ id: this.id, objectIDs: this.#objectIDs, getChartTypeIcon: () => this.#getChartTypeIcon() });
+
+  }
+
+  async #fetchSRLevels() {
+    try {
+      const res = await axios.post(
+        `${ENV.BASE_API_URL}/api/sr-levels/`,
+        {
+          candles: this.#filteredData,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
+          },
+        }
+      );
+      console.log("SR Levels:", res.data);
+      this.#snrLevels = res.data.lines;
+      this.#drawSRLevels();
+    } catch (err) {
+      console.error("SR Levels fetch error:", err);
+    } finally {
+      this.#srLevelsFetching = false;
+    }
+  }
+
+  async #fetchCandlePattern() {
+    try {
+      const res = await axios.post(
+        `${ENV.BASE_API_URL}/api/candle-pattern/`,
+        {
+          candles: this.#filteredData,
+          trade_data: this.#annotationsData.map(a => ({
+            date: a.Date,
+            trade_type: a.transactionType
+          })),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("jwtToken")}`,
+          },
+        }
+      );
+      console.log("Candle Pattern:", res.data);
+      this.#candlePattern = res.data;
+    } catch (err) {
+      console.error("Candle Pattern fetch error:", err);
+    } finally {
+      this.#candlePatternFetching = false;
+    }
+  }
 
   #modeHandler(mode) {
 
@@ -1305,21 +1645,88 @@ class CandleStickChart {
     ).style.display = 'none';
   }
 
-  #mouseMoveLockers(d) {
+  #initPatternTooltip() {
+    // Remove if exists
+    d3.select(`#${this.id} .pattern-tooltip`).remove();
+
+    d3.select(`#${this.id}`)
+      .append("div")
+      .attr("class", "pattern-tooltip")
+      .style("position", "absolute")
+      .style("display", "none")
+      .style("background", "#0d1b2a")
+      .style("border", "1px solid #1e3048")
+      .style("border-radius", "8px")
+      .style("padding", "10px 14px")
+      .style("pointer-events", "none")
+      .style("z-index", "9999")
+      .style("font-size", "12px")
+      .style("font-family", "sans-serif")
+      .style("box-shadow", "0 4px 16px rgba(0,0,0,0.5)")
+      .style("max-width", "220px")
+      .style("line-height", "1.8");
+  }
+
+  #mouseMoveLockers(d, event) {
     this.#lockSelectorX = true;
-    //x line
     this.#xLineHandler(d);
-
-    //x label
     this.#xLabelHandler(d);
-
-    //info
     this.#candleInfoHandler(d);
+
+    // Pattern tooltip
+    if (this.#candlePatternActive && this.#candlePattern?.patterns?.length) {
+      const candleDate = new Date(d.Date).toDateString();
+      const match = this.#candlePattern.patterns.find(
+        p => new Date(p.trade_time).toDateString() === candleDate
+      );
+
+      if (match) {
+        const score = match.score ?? 50;
+        const scoreColor = score >= 70 ? "#00ff88"
+          : score >= 40 ? "#FFD700"
+            : "#ff4444";
+
+        const patternNames = match.patterns?.length
+          ? match.patterns.map(p => `<span style="color:${scoreColor}">${p}</span>`).join(", ")
+          : `<span style="color:#aaa">No named pattern</span>`;
+
+        const tooltip = d3.select(`#${this.id} .pattern-tooltip`);
+        tooltip
+          .style("display", "block")
+          .html(`
+          <div style="color:#fff; font-weight:600; margin-bottom:4px;">
+            Candle Pattern
+          </div>
+          <div style="color:#aaa; margin-bottom:6px; font-size:11px;">
+            ${match.description ?? ""}
+          </div>
+          <div style="margin-bottom:4px;">${patternNames}</div>
+          <div style="margin-top:6px; border-top:1px solid #1e3048; padding-top:6px;">
+            Score: <span style="color:${scoreColor}; font-weight:700; font-size:14px;">
+              ${score}/100
+            </span>
+          </div>
+        `);
+
+        // Position near the candle
+        const chartRect = document.getElementById(this.id).getBoundingClientRect();
+        const x = this.#xScaleFunc(parseDate(d.Date));
+        const y = this.#yScaleFunc(d.High);
+
+        tooltip
+          .style("left", `${x + 50}px`)
+          .style("top", `${y - 10}px`);
+
+      } else {
+        d3.select(`#${this.id} .pattern-tooltip`).style("display", "none");
+      }
+    }
   }
 
   #mouseLeaveLocker(d) {
     this.#lockSelectorX = false;
     this.#candleInfoLeaveHandler();
+    d3.select(`#${this.id} .pattern-tooltip`).style("display", "none");
   }
 
   #handleZoomBox() {
@@ -1559,8 +1966,7 @@ class CandleStickChart {
         });
 
     } else {
-      console.log('Measure complete');
-      // 🧠 Lock out trailing mousemove
+      
       this.#drawAndMeasureLocked = true;
       d3.select(`#${this.#objectIDs.svgId}`).on('mousemove.measure', null);
 
@@ -1618,7 +2024,6 @@ class CandleStickChart {
 
   #drawStaticAnnotationFromData() {
     const data = this.#annotationsData;
-
     if (!data?.length) return;
 
     const parseTime = d => new Date(d);
@@ -1701,7 +2106,6 @@ class CandleStickChart {
           };
         })
       ).on("dragend", ann => {
-        console.log("Annotation dragged:", ann);
         this.#annotationCache.set(ann.data.id, { dx: ann.dx, dy: ann.dy });
       });
 
@@ -2319,6 +2723,7 @@ class CandleStickChart {
 
   draw() {
 
+    this.#calculateExtendConfigs();
     this.destroy();
     this.#createLayout();
     this.#calculateXscale();
@@ -2333,11 +2738,17 @@ class CandleStickChart {
     this.#createCandlesBody();
     this.#createCandlesHigh();
     this.#createCandlesLow();
+    if (this.#candlePatternActive) this.#highlightPatternCandles();
     this.#addEventListeners();
     this.#drawStaticAnnotationFromData();
     this.#redrawCachedLines();
+    this.#drawEMALines();
+    if (this.#showVolume) this.#drawVolumeChart();
+    if (this.#showRSI) this.#drawRSIPanel();
     this.#renderBrush();
     this.#renderPnLToggleButton();
+    this.#initPatternTooltip();
+
   }
 
 }

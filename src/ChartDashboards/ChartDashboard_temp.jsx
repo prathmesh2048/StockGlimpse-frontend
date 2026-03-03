@@ -61,6 +61,7 @@ const Chart = ({ fromHistory, symbol, trades, onReady }) => {
         setPriceData(res.data.prices);
         setAnnotations(res.data.annotations);
         setCardData(res.data.card_data);
+        console.log(`Fetched annotations for ${symbol}:`, res.data.annotations);
       } catch (err) {
         console.error(`Error fetching ${symbol}`, err);
       } finally {
@@ -129,7 +130,7 @@ const Chart = ({ fromHistory, symbol, trades, onReady }) => {
   }, []);
 
   return (
-    <StockChartCard stock={cardData}>
+    <StockChartCard annotations={annotations} cardData={cardData} priceData={priceData} stock={cardData}>
       <div className={`${styles.chart} ${styles[theme]}`}>
         {loading && (
           <div className={styles.chartLoader}>
