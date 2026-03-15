@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import Navbar from "../Navbar/Navbar";
 import ENV from "../config";
 import { Puff } from "react-loader-spinner";
+import useUser from "../hooks/useUser";
 
 const PARAM_KEYS = ["trend", "momentum", "volume", "sr", "candle"];
 const PARAM_LABELS = {
@@ -34,6 +35,7 @@ const getBarColor = (score, max) => {
 
 // ── Score Trend Chart ─────────────────────────────────────────────
 const ScoreTrendChart = ({ trades, scoreMap }) => {
+
     const svgRef = useRef(null);
     const containerRef = useRef(null);
     const [tooltip, setTooltip] = useState(null);
@@ -325,6 +327,8 @@ export default function Analytics() {
     const [scoresLoading, setScoresLoading] = useState(false);
     const [error, setError] = useState("");
     const navigate = useNavigate();
+    const { user, loading: userLoading } = useUser();
+    const isPaid = user?.has_unlimited_coins;
 
     // ── Step 1: Fetch trades ──────────────────────────────────────
     useEffect(() => {
@@ -408,9 +412,117 @@ export default function Analytics() {
 
                 {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
 
-                {isLoading ? (
+                {isLoading || userLoading ? (
                     <div className="flex items-center justify-center h-64">
                         <Puff color="#6366F1" size={60} ariaLabel="loading" />
+                    </div>
+                ) : !isPaid ? (
+                    <div className="relative rounded-2xl overflow-hidden min-h-[500px]">
+
+                        {/* Blurred fake preview */}
+                        <div className="blur-[3px] opacity-60 pointer-events-none select-none">
+                            <div className="mb-6">
+                                <h1 className="text-white text-2xl font-bold">Analytics</h1>
+                                <p className="text-[#5a7a9a] text-sm mt-1">Your trade quality over time</p>
+                            </div>
+
+                            <div className="w-full bg-[#0d1b2a] border border-[#1e3048] rounded-2xl p-6 mb-6">
+                                <div className="flex items-end justify-between mb-6">
+                                    <div>
+                                        <p className="text-[#5a7a9a] text-xs uppercase tracking-widest font-semibold mb-1">Score Trend</p>
+                                        <p className="text-white text-3xl font-bold">
+                                            48
+                                            <span className="text-[#5a7a9a] text-base font-normal ml-2">/100 avg</span>
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-6">
+                                        {[
+                                            { label: "Best", value: 74, color: "#00c896" },
+                                            { label: "Worst", value: 33, color: "#ff4444" },
+                                            { label: "Total", value: 19, color: "#fff" },
+                                        ].map(s => (
+                                            <div key={s.label} className="text-right">
+                                                <p className="text-[#5a7a9a] text-xs mb-0.5">{s.label}</p>
+                                                <p className="font-bold text-sm" style={{ color: s.color }}>{s.value}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="w-full h-40 bg-[#080f17] rounded-xl overflow-hidden px-4 pt-4 pb-6">
+                                    <svg width="100%" height="100%" viewBox="0 0 400 100" preserveAspectRatio="none">
+                                        <defs>
+                                            <linearGradient id="fakeAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.15" />
+                                                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                                            </linearGradient>
+                                        </defs>
+                                        <path
+                                            d="M0,55 C20,50 40,30 60,35 S90,60 110,58 S140,25 160,38 S190,65 210,60 S240,35 260,45 S290,70 310,55 S340,30 360,40 S385,50 400,45"
+                                            fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round"
+                                        />
+                                        <path
+                                            d="M0,55 C20,50 40,30 60,35 S90,60 110,58 S140,25 160,38 S190,65 210,60 S240,35 260,45 S290,70 310,55 S340,30 360,40 S385,50 400,45 L400,100 L0,100 Z"
+                                            fill="url(#fakeAreaGrad)"
+                                        />
+                                        {[[60, 35], [110, 58], [160, 38], [210, 60], [260, 45], [310, 55], [360, 40]].map(([x, y], i) => (
+                                            <circle key={i} cx={x} cy={y} r="3" fill="#f5a623" stroke="#060d14" strokeWidth="1.5" />
+                                        ))}
+                                        <line x1="0" y1="50" x2="400" y2="50" stroke="#3b82f6" strokeDasharray="6 4" strokeOpacity="0.4" strokeWidth="1" />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            {[
+                                { symbol: "APOLLOHOSP", type: "SELL", score: 63, color: "#f5a623" },
+                                { symbol: "NIFTYBEES", type: "BUY", score: 54, color: "#f5a623" },
+                                { symbol: "M&M", type: "BUY", score: 38, color: "#ff4444" },
+                            ].map((t, i) => (
+                                <div key={i} className="w-full bg-[#0d1b2a] border border-[#1e3048] rounded-xl px-5 py-4 flex items-center gap-4 mb-2">
+                                    <div className="w-14 h-14 rounded-xl border flex flex-col items-center justify-center border-yellow-500/20 bg-yellow-500/10">
+                                        <span className="text-lg font-bold leading-none" style={{ color: t.color }}>{t.score}</span>
+                                        <span className="text-xs opacity-50 mt-0.5">/100</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 flex-1">
+                                        <span className="text-white font-bold">{t.symbol}</span>
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${t.type === "BUY" ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"}`}>
+                                            {t.type}
+                                        </span>
+                                    </div>
+                                    <div className="w-24 h-2 bg-[#1e3048] rounded-full" />
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Frosted overlay */}
+                        <div className="absolute inset-0 bg-[#060d14]/75 backdrop-blur-[2px] rounded-2xl" />
+
+                        {/* Lock UI */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                            <div className="relative flex items-center justify-center w-10 h-10 mb-1">
+                                <div className="absolute inset-0 rounded-full bg-[#3b82f6]/15 animate-pulse" />
+                                <div className="w-10 h-10 rounded-full bg-[#0d1b2a] border border-[#2a4a6a] flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.2)]">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" />
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <p className="text-white text-sm font-semibold tracking-wide">
+                                Stop entering at the wrong time
+                            </p>
+
+                            <button
+                                onClick={() => window.location.assign("/pricing")}
+                                className="group flex items-center gap-2 bg-[#3b82f6] hover:bg-[#2563eb] text-white text-xs font-bold px-6 py-2.5 rounded-lg transition-all duration-200 shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_32px_rgba(59,130,246,0.65)] mt-1"
+                            >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" />
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                </svg>
+                                Unlock for ₹49/mo
+                            </button>
+                        </div>
                     </div>
                 ) : (
                     <>
@@ -431,10 +543,7 @@ export default function Analytics() {
                         <br />
 
                         {trades.length > 0 && (
-                            <ScoreTrendChart
-                                trades={trades}
-                                scoreMap={scoreMap}
-                            />
+                            <ScoreTrendChart trades={trades} scoreMap={scoreMap} />
                         )}
 
                         <div className="flex flex-col gap-8">
@@ -477,7 +586,6 @@ export default function Analytics() {
                             )}
                         </div>
 
-                        {/* Scores loading indicator */}
                         {scoresLoading && (
                             <div className="fixed bottom-6 right-6 bg-[#0d1b2a] border border-[#1e3048] rounded-xl px-4 py-3 flex items-center gap-3 shadow-xl">
                                 <div className="w-3 h-3 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin" />

@@ -51,6 +51,7 @@ class CandleStickChart {
   #rightOffsetFactor = 0.40;
   #snrLevels = [];
   #srLevelsFetching = false;
+  #isPaid = false;
 
   #candlePattern = null;
   #candlePatternFetching = false;
@@ -86,8 +87,7 @@ class CandleStickChart {
   #rsiData = [];
 
 
-  constructor(width, height, data, stockAnnotationsData, id, theme = "dark") {
-
+  constructor(width, height, data, stockAnnotationsData, id, theme = "dark", isPaid) {
     this.#theme = theme
     this.#colors = colors(theme);
     this.#config = config(width, height);
@@ -96,6 +96,7 @@ class CandleStickChart {
     this.#annotationsData = stockAnnotationsData;
     this.#filteredData = data;
     this.id = id;
+    this.#isPaid = isPaid;
     this.#lockSelectorX = false;
     this.#calculateExtendConfigs();
     this.#setObjectIDs();
@@ -153,11 +154,13 @@ class CandleStickChart {
 
     document.getElementById(this.id)?.addEventListener("ailevels-toggle", () => {
 
+      if (!this.#isPaid) {
+        this.#showUpgradeToast("AI Levels");
+        return;
+      }
       if (!this.#snrLevels || this.#snrLevels.length === 0) {
-
-        if (this.#srLevelsFetching) return; // already fetching, ignore click
+        if (this.#srLevelsFetching) return;
         this.#fetchSRLevels();
-
       } else if (d3.select(`#${this.#objectIDs.svgId}`).selectAll('.sr-level').empty()) {
         this.#drawSRLevels();
       } else {
@@ -176,16 +179,16 @@ class CandleStickChart {
       this.draw();
     });
 
-    document.getElementById(id)?.addEventListener("candle-pattern-toggle", () => {
-
-    });
 
     document.getElementById(id)?.addEventListener("candle-pattern-toggle", () => {
+      if (!this.#isPaid) {
+        this.#showUpgradeToast("Candle Pattern"); // 👈
+        return;
+      }
       if (!this.#candlePattern || this.#candlePattern.patterns?.length === 0) {
         if (this.#candlePatternFetching) return;
         this.#fetchCandlePattern();
       } else if (this.#candlePatternActive) {
-        // Turn off
         this.#candlePatternActive = false;
         d3.select(`#${this.#objectIDs.svgId}`)
           .selectAll('.candle-pattern-highlight')
@@ -195,7 +198,6 @@ class CandleStickChart {
           .style("opacity", 1)
           .classed("candle-pattern-highlight", false);
       } else {
-        // Turn on
         this.#candlePatternActive = true;
         this.#highlightPatternCandles();
       }
@@ -515,6 +517,101 @@ class CandleStickChart {
     }, 2500);
   }
 
+
+  #showUpgradeToast(feature) {
+    d3.select(`#${this.id} .upgrade-toast`).remove();
+
+    const isMobile = window.innerWidth <= 600;
+
+    const toast = d3.select(`#${this.id}`)
+      .append("div")
+      .attr("class", "upgrade-toast")
+      .style("position", "absolute")
+      .style("top", "50%")
+      .style("left", "50%")
+      .style("transform", "translate(-50%, -50%)")
+      .style("background", "#0a1628")
+      .style("border", "1px solid rgba(59,130,246,0.25)")
+      .style("border-radius", "5px")
+      .style("padding", isMobile ? "20px 16px" : "24px 24px")
+      .style("display", "flex")
+      .style("flex-direction", "column")
+      .style("align-items", "center")
+      .style("gap", "16px")
+      .style("z-index", "9999")
+      .style("box-shadow", "0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.1)")
+      .style("pointer-events", "auto")
+      .style("width", isMobile ? "240px" : "280px")
+      .style("box-sizing", "border-box");
+
+    // Lock icon
+    toast.append("div")
+      .style("width", "40px")
+      .style("height", "40px")
+      .style("border-radius", "30%")
+      .style("background", "rgba(59,130,246,0.10)")
+      .style("border", "1px solid rgba(59,130,246,0.2)")
+      .style("display", "flex")
+      .style("align-items", "center")
+      .style("justify-content", "center")
+      .style("flex-shrink", "0")
+      .html(`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>`);
+
+    // Title
+    toast.append("div")
+      .style("color", "#ffffff")
+      .style("font-size", "13px")
+      .style("font-weight", "600")
+      .style("font-family", "sans-serif")
+      .style("text-align", "center")
+      .style("line-height", "1.4")
+      .style("width", "100%")
+      .text("Stop entering at the wrong time");
+
+    // Buttons row
+    const btns = toast.append("div")
+      .style("display", "flex")
+      .style("gap", "8px")
+      .style("width", "100%");
+
+    btns.append("button")
+      .style("flex", "1")
+      .style("background", "transparent")
+      .style("border", "1px solid #1e3048")
+      .style("border-radius", "8px")
+      .style("color", "#5a7a9a")
+      .style("font-size", "12px")
+      .style("font-family", "sans-serif")
+      .style("padding", "9px 0")
+      .style("cursor", "pointer")
+      .style("white-space", "nowrap")
+      .text("Dismiss")
+      .on("click", () => toast.remove());
+
+    btns.append("button")
+      .style("flex", "1")
+      .style("background", "#3b82f6")
+      .style("border", "none")
+      .style("border-radius", "8px")
+      .style("color", "white")
+      .style("font-size", "12px")
+      .style("font-weight", "700")
+      .style("font-family", "sans-serif")
+      .style("padding", "9px 0")
+      .style("cursor", "pointer")
+      .style("white-space", "nowrap")
+      .style("box-shadow", "0 0 16px rgba(59,130,246,0.35)")
+      .text("Unlock ₹49/mo")
+      .on("click", () => {
+        window.location.href = "/pricing";
+        toast.remove(); 
+      });
+
+    setTimeout(() => toast.remove(), 3000);
+  }
   setData(newData) {
     this.data = newData;
     this.#filteredData = newData;
@@ -1321,9 +1418,12 @@ class CandleStickChart {
   }
 
   #createToolsBtns() {
-
-    createToolsBtns({ id: this.id, objectIDs: this.#objectIDs, getChartTypeIcon: () => this.#getChartTypeIcon() });
-
+    createToolsBtns({
+      id: this.id,
+      objectIDs: this.#objectIDs,
+      getChartTypeIcon: () => this.#getChartTypeIcon(),
+      isPaid: this.#isPaid
+    });
   }
 
   async #fetchSRLevels() {
@@ -1966,7 +2066,7 @@ class CandleStickChart {
         });
 
     } else {
-      
+
       this.#drawAndMeasureLocked = true;
       d3.select(`#${this.#objectIDs.svgId}`).on('mousemove.measure', null);
 

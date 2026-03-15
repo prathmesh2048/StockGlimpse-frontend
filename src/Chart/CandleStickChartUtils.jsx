@@ -195,6 +195,9 @@ export const modifyAnnotationEnd = (group, colors) => {
 export const createToolsBtns = (opts) => {
   // Support both call-binding and explicit options object
   const id = opts?.id ?? this.id;
+  const isPaid = opts?.isPaid ?? false;
+  console.log("isPaid in createToolsBtns:", isPaid);
+  const premiumItems = ["ailevels", "candle-pattern"];
 
   const objectIDs =
     opts?.objectIDs ??
@@ -427,6 +430,8 @@ export const createToolsBtns = (opts) => {
   ];
 
   menuItems.forEach((item) => {
+    const isPremium = premiumItems.includes(item.id) && !isPaid;
+
     const row = dropdown
       .append("div")
       .attr("id", `tools-menu-${item.id}`)
@@ -435,70 +440,83 @@ export const createToolsBtns = (opts) => {
       .style("gap", "12px")
       .style("padding", "9px 18px")
       .style("cursor", "pointer")
-      .style("color", "#ccc")
+      .style("color", isPremium ? "#6a8aaa" : "#ccc")
       .style("font-size", "13px")
       .style("font-family", "sans-serif")
-      .style("transition", "background 0.15s");
+      .style("transition", "background 0.15s")
+      .style("position", "relative");
 
     row
       .on("mouseover", function () {
-        d3.select(this).style("background", "#162033").style("color", "#fff");
+        d3.select(this)
+          .style("background", "#162033")
+          .style("color", isPremium ? "#8aaacf" : "#fff");
       })
       .on("mouseout", function () {
         d3.select(this)
           .style("background", "transparent")
-          .style("color", "#ccc");
+          .style("color", isPremium ? "#6a8aaa" : "#ccc");
       });
 
     row
       .append("span")
       .style("display", "flex")
       .style("align-items", "center")
-      .style("opacity", "0.75")
+      .style("opacity", isPremium ? "0.45" : "0.75")
       .html(item.icon);
 
     row.append("span").text(item.label);
 
-    // Attach event listeners for AI Levels
+    // Lock badge for premium items
+    if (isPremium) {
+      row
+        .append("div")
+        .style("margin-left", "auto")
+        .style("display", "flex")
+        .style("align-items", "center")
+        .style("gap", "4px")
+        .style("background", "rgba(59,130,246,0.12)")
+        .style("border", "1px solid rgba(59,130,246,0.25)")
+        .style("border-radius", "4px")
+        .style("padding", "2px 6px")
+        .html(`
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <span style="font-size:10px;color:#3b82f6;font-weight:600;letter-spacing:0.02em">Pro</span>
+            `);
+    }
+
+    // Event listeners — clicks always fire the CustomEvent,
+    // gate logic lives in the constructor listeners
     if (item.id === "ailevels") {
       row.on("click", (event) => {
         event.stopPropagation();
-        document.getElementById(id)?.dispatchEvent(
-          new CustomEvent("ailevels-toggle")
-        );
+        document.getElementById(id)?.dispatchEvent(new CustomEvent("ailevels-toggle"));
       });
     }
 
-    // Attach event listeners for Volume
     if (item.id === "volume") {
       row.on("click", (event) => {
         event.stopPropagation();
-        document.getElementById(id)?.dispatchEvent(
-          new CustomEvent("volume-toggle")
-        );
+        document.getElementById(id)?.dispatchEvent(new CustomEvent("volume-toggle"));
       });
     }
 
-    // Attach event listeners for RSI
     if (item.id === "rsi") {
       row.on("click", (event) => {
         event.stopPropagation();
-        document.getElementById(id)?.dispatchEvent(
-          new CustomEvent("rsi-toggle")
-        );
+        document.getElementById(id)?.dispatchEvent(new CustomEvent("rsi-toggle"));
       });
     }
 
-    // Attach event listeners for Candle Pattern
     if (item.id === "candle-pattern") {
       row.on("click", (event) => {
         event.stopPropagation();
-        document.getElementById(id)?.dispatchEvent(
-          new CustomEvent("candle-pattern-toggle")
-        );
+        document.getElementById(id)?.dispatchEvent(new CustomEvent("candle-pattern-toggle"));
       });
     }
-
   });
 
   // ── Divider before EMA ──────────────────────────────────────────────────

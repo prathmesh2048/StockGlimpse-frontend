@@ -4,8 +4,6 @@ import Navbar from '../Navbar/Navbar';
 import axios from "axios";
 import ENV from '../config';
 
-
-
 const loadRazorpay = () =>
     new Promise((resolve) => {
         const script = document.createElement("script");
@@ -67,38 +65,40 @@ export default function SubscriptionPlans() {
         rzp.open();
     };
 
-
     return (
         <>
             <Navbar />
             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 antialiased selection:bg-indigo-100">
-                <div className="w-full max-w-md">
+                <div className="w-full max-w-xl">
                     <div className="bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden transition-all duration-300 hover:shadow-[0_30px_60px_rgba(0,0,0,0.08)]">
-
                         <div className="p-8 md:p-10 text-center">
+
                             <h2 className="text-3xl font-extrabold text-slate-900 mb-4">
                                 Unlimited. Simple. Powerful.
                             </h2>
 
-                            <div className="mb-8 space-y-1">
+                            <div className="mb-6 space-y-1">
                                 <p className="text-md text-emerald-600 font-semibold mt-2">
                                     ⚡ Unlock in 5 seconds. Instant access ⚡
                                 </p>
-                                <p className="text-slate-500 text-sm leading-relaxed">
-                                    Cheaper than a coffee. Unlock everything.
-                                </p>
                             </div>
-                            <div className="space-y-4 mb-10 text-left max-w-[280px] mx-auto">
+
+                            {/* Feature list — 2 columns */}
+                            <div className="grid grid-cols-2 gap-x-8 gap-y-4 mb-10 text-left">
+
                                 {[
                                     "Unlimited trade visualizations",
+                                    "AI trade scoring",
+                                    "AI Levels — S/R detection",
+                                    "Analytics & score trends",
+                                    "Candle pattern recognition",
                                     "Unlimited journaling & notes",
-                                    "100% ads-free experience"
                                 ].map((feature, index) => (
-                                    <div key={index} className="flex items-center gap-3 group">
-                                        <div className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-50 flex items-center justify-center">
-                                            <Check className="w-3.5 h-3.5 text-emerald-600" strokeWidth={3} />
+                                    <div key={index} className="flex items-start gap-2">
+                                        <div className="flex-shrink-0 w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center mt-0.5">
+                                            <Check className="w-3 h-3 text-emerald-600" strokeWidth={3} />
                                         </div>
-                                        <span className="text-slate-600 text-[15px] font-medium leading-relaxed">
+                                        <span className="text-slate-800 text-sm font-medium leading-snug">
                                             {feature}
                                         </span>
                                     </div>
@@ -115,8 +115,7 @@ export default function SubscriptionPlans() {
                                 </p>
                             </div>
 
-                            <div className="mb-8 space-y-1">
-
+                            <div className="mb-8">
                                 <p className="text-slate-900 font-semibold text-sm">
                                     Built for serious traders. Priced for everyone.
                                 </p>
@@ -129,10 +128,9 @@ export default function SubscriptionPlans() {
                             </button>
 
                             <p className="mt-4 text-slate-400 text-xs">
-                                One-time payment • Secure checkout
+                                · Secure checkout
                             </p>
                         </div>
-
                     </div>
                 </div>
             </div>

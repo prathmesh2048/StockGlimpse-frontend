@@ -13,14 +13,20 @@ import CandleStickChart from '../Chart/CandleStickChart';
 import NoteTextarea from '../Chart/NoteTextArea';
 import { Puff } from "react-loader-spinner";
 import StockChartCard from './StockChartCard';
-
+import useUser from "../hooks/useUser";
 
 /* ----------------------------------------------------
    Chart Component
 ---------------------------------------------------- */
-const Chart = ({ fromHistory, symbol, trades, onReady }) => {
+const Chart = ({ fromHistory, symbol, trades, onReady}) => {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
+
+  const { user, userLoading } = useUser();
+  const isPaid = user?.has_unlimited_coins
+
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [upgradeFeature, setUpgradeFeature] = useState("");
 
   const [priceData, setPriceData] = useState([]);
   const [annotations, setAnnotations] = useState([]);
@@ -91,7 +97,7 @@ const Chart = ({ fromHistory, symbol, trades, onReady }) => {
           annotations,
           chartId,
           theme,
-          NoteTextarea
+          isPaid
         );
       } else {
         chartInstance.current.clear?.();

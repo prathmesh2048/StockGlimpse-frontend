@@ -1,8 +1,12 @@
 import './StockChartCard.css';
 import StockCard from './StockCard';
 import ScorePanel from './ScorePanel';
+import useUser from '../hooks/useUser';
 
 const StockChartCard = ({ annotations = { annotations }, cardData = { cardData }, priceData = { priceData }, stock, children }) => {
+    
+    const { user, loading } = useUser();
+
     return (
         <div className="stockChartCard">
 
@@ -18,7 +22,7 @@ const StockChartCard = ({ annotations = { annotations }, cardData = { cardData }
 
             {/* Score Panel */}
             <ScorePanel
-                isPaid={true}
+                isPaid={user?.has_unlimited_coins}
                 trades={annotations}
                 priceData={priceData}
             />

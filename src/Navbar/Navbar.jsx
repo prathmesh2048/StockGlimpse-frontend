@@ -12,6 +12,8 @@ const Navbar = ({ isLandingPage = false }) => {
   const [scrolled, setScrolled] = useState(false);
   const [loggedIn, setLoggedIn] = useState(!!user);
 
+  const isPaid = user?.has_unlimited_coins;
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
@@ -63,7 +65,9 @@ const Navbar = ({ isLandingPage = false }) => {
           {/* Desktop */}
           <div className="hidden md:flex items-center gap-6">
             <Link to="/" className={link}>Home</Link>
-            <Link to="/" className={link}>About</Link>
+            <Link to="/about" className={link}>About</Link>
+            <Link to="/pricing" className={link}>Pricing</Link>
+
 
             {!loggedIn ? (
               <>
@@ -78,11 +82,26 @@ const Navbar = ({ isLandingPage = false }) => {
             ) : (
               <>
                 <Link to="/history" className={link}>History</Link>
+
+                {/* Analytics — locked for free users */}
+                <Link to="/analytics" className={`${link} relative`}>
+                  Analytics
+                  {!isPaid && (
+                    <span className="flex items-center gap-1 bg-[rgba(59,130,246,0.12)] border border-[rgba(59,130,246,0.25)] text-[#3b82f6] text-[10px] font-semibold px-1.5 py-0.5 rounded ml-1">
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                      </svg>
+                      Pro
+                    </span>
+                  )}
+                </Link>
+
                 <Link to="/profile" className={link}>Profile</Link>
 
                 <div className={`${link} cursor-default`}>
                   <Coins className="w-4 h-4 text-yellow-400" />
-                  {user?.has_unlimited_coins ? (
+                  {isPaid ? (
                     <span className="text-lg font-bold text-yellow-400">∞</span>
                   ) : (
                     <span className="text-sm font-bold text-yellow-400">
@@ -113,14 +132,15 @@ const Navbar = ({ isLandingPage = false }) => {
         {/* Mobile menu */}
         {open && (
           <div className="md:hidden bg-[#0f172a] border-t border-white/10 px-6 py-4 flex flex-col gap-3">
-            <Link to="/" className={link}>Home</Link>
-            <Link to="/about" className={link}>About</Link>
+            <Link to="/" className={link} onClick={() => setOpen(false)}>Home</Link>
+            <Link to="/about" className={link} onClick={() => setOpen(false)}>About</Link>
+            <Link to="/pricing" className={link}>Pricing</Link>
 
             {!loggedIn ? (
               <>
-                <Link to="/login" className={link}>Login</Link>
+                <Link to="/login" className={link} onClick={() => setOpen(false)}>Login</Link>
                 <button
-                  onClick={() => navigate("/signup")}
+                  onClick={() => { navigate("/signup"); setOpen(false); }}
                   className="w-full bg-blue-600 py-2 rounded-lg text-white font-semibold"
                 >
                   Signup
@@ -128,12 +148,39 @@ const Navbar = ({ isLandingPage = false }) => {
               </>
             ) : (
               <>
-                <Link to="/temp" className={link}>Charts</Link>
-                <Link to="/profile" className={link}>Profile</Link>
+                <Link to="/history" className={link} onClick={() => setOpen(false)}>History</Link>
+
+                {/* Analytics — locked for free users */}
+                <Link to="/analytics" className={`${link}`} onClick={() => setOpen(false)}>
+                  Analytics
+                  {!isPaid && (
+                    <span className="flex items-center gap-1 bg-[rgba(59,130,246,0.12)] border border-[rgba(59,130,246,0.25)] text-[#3b82f6] text-[10px] font-semibold px-1.5 py-0.5 rounded ml-1">
+                      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                      </svg>
+                      Pro
+                    </span>
+                  )}
+                </Link>
+
+                <Link to="/profile" className={link} onClick={() => setOpen(false)}>Profile</Link>
+
+                {/* Coins display on mobile */}
+                <div className={`${link} cursor-default`}>
+                  <Coins className="w-4 h-4 text-yellow-400" />
+                  {isPaid ? (
+                    <span className="text-lg font-bold text-yellow-400">∞</span>
+                  ) : (
+                    <span className="text-sm font-bold text-yellow-400">
+                      {user?.coins} coins
+                    </span>
+                  )}
+                </div>
 
                 <button
-                  onClick={handleSignout}
-                  className="text-red-400 text-left"
+                  onClick={() => { handleSignout(); setOpen(false); }}
+                  className="text-red-400 hover:text-red-300 text-sm text-left"
                 >
                   Logout
                 </button>
