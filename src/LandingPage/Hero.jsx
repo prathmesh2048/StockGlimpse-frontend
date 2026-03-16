@@ -61,10 +61,7 @@ const Hero = ({ isLoggedIn }) => {
 
 
 
-                    <button onClick={() => {
-                        const nextSection = document.getElementById("visual_anchor");
-                        nextSection?.scrollIntoView({ behavior: "smooth" });
-                    }}
+                    <button onClick={() => window.location.assign("/demo")}
                         className="w-full sm:w-auto px-8 py-4 bg-slate-800/50 hover:bg-slate-800 text-white font-semibold rounded-xl border border-slate-700 hover:border-slate-600 backdrop-blur-sm transition-all flex items-center justify-center gap-2 group">
                         <Play className="w-4 h-4 fill-current group-hover:text-blue-400 transition-colors" />
                         Watch Demo

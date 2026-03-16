@@ -3,8 +3,8 @@ import StockCard from './StockCard';
 import ScorePanel from './ScorePanel';
 import useUser from '../hooks/useUser';
 
-const StockChartCard = ({ annotations = { annotations }, cardData = { cardData }, priceData = { priceData }, stock, children }) => {
-    
+const StockChartCard = ({ isDemo = false, annotations = { annotations }, cardData = { cardData }, priceData = { priceData }, stock, children }) => {
+
     const { user, loading } = useUser();
 
     return (
@@ -22,7 +22,8 @@ const StockChartCard = ({ annotations = { annotations }, cardData = { cardData }
 
             {/* Score Panel */}
             <ScorePanel
-                isPaid={user?.has_unlimited_coins}
+                isPaid={user?.has_unlimited_coin || isDemo}
+                isDemo={isDemo}
                 trades={annotations}
                 priceData={priceData}
             />

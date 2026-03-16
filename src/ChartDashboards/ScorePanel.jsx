@@ -2,13 +2,46 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import ENV from "../config";
 
-const ScorePanel = ({ isPaid = false, trades = [], priceData = [] }) => {
+const DEMO_SCORES = [
+    {
+        overall: 57,
+        trade_type: "buy",
+        price: "258.9",
+        params: {
+            trend: { score: 21, max: 30 },
+            momentum: { score: 13, max: 20, detail: { rsi: 58.3 } },
+            volume: { score: 13, max: 15 },
+            sr: { score: 4, max: 25 },
+            candle: { score: 7, max: 10, detail: { description: "Bullish engulfing — strong momentum at entry" } },
+        }
+    },
+    {
+        overall: 44,
+        trade_type: "sell",
+        price: "271.2",
+        params: {
+            trend: { score: 18, max: 30 },
+            momentum: { score: 9, max: 20, detail: { rsi: 62.1 } },
+            volume: { score: 8, max: 15 },
+            sr: { score: 4, max: 25 },
+            candle: { score: 5, max: 10, detail: { description: "Normal bearish candle — no strong signal" } },
+        }
+    }
+];
+
+const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [] }) => {
 
     const [scores, setScores] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     console.log("ScorePanel props:", { isPaid, trades, priceData });
     useEffect(() => {
+
+        if (isDemo) {
+            setScores(DEMO_SCORES);
+            return;
+        }
+
         if (!isPaid || !trades.length || !priceData.length) return;
 
         const fetchScores = async () => {

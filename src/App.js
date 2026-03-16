@@ -15,6 +15,7 @@ import Profile from './profile/Profile';
 import History from './History/History';
 import SubscriptionPlans from './Subscription/SubscriptionPlans';
 import Analytics from './Analytics/analytics';
+import DemoChart from './Demo/Demo';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/temp" element={<DashBoard />} />
+          <Route path="/demo" element={<DemoChart />} />
           <Route path="/history" element={<History />} />
           <Route path="/upload-file" element={<FileUpload />} />
           <Route path="/select-broker" element={<SelectBroker />} />
