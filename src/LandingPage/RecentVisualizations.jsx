@@ -78,7 +78,7 @@ const RecentVisualizations = () => {
                             </p>
 
                             <p className="text-xs text-slate-500">
-                                {new Date(item.last_trade_at).toDateString()}
+                            {item.last_trade_at ? new Date(item.last_trade_at).toDateString() : "Recently"}
                             </p>
                         </div>
                     ))}

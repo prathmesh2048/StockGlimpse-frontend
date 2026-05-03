@@ -10,7 +10,7 @@ const StockCard = ({ stock }) => {
     } = stock || {};
 
     const isUp = change > 0;
-    console.log("Rendering StockCard for:", symbol);
+
     return (
         <div className="stockCard">
             <div className="stockLeft">

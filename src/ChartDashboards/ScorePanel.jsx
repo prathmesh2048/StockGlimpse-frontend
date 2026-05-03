@@ -35,6 +35,7 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     console.log("ScorePanel props:", { isPaid, trades, priceData });
+    
     useEffect(() => {
 
         if (isDemo) {
