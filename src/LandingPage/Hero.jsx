@@ -108,16 +108,18 @@ const Hero = ({ isLoggedIn }) => {
 
                     <div
                         ref={containerRef}
-                        className="relative bg-[#131722] rounded-xl border border-slate-700/50 shadow-2xl overflow-hidden h-[500px] md:h-[600px]"
+                        className="relative bg-[#131722] rounded-xl border border-slate-700/50 shadow-2xl overflow-hidden aspect-video"
+
                     >
-                        {/* ✅ Native controls, no muted prop, full sound */}
+                        {/* ✅ Native controls, muted by default, full sound on unmute */}
                         <video
                             ref={videoRef}
+                            muted={true}
                             playsInline
                             controls
                             preload='none'
                             poster={process.env.PUBLIC_URL + "/images/product_demo.png"}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain"
                         >
                             <source src={process.env.PUBLIC_URL + "/videos/demo_compressed.mp4"} type="video/mp4" />
                         </video>
@@ -132,7 +134,7 @@ const Hero = ({ isLoggedIn }) => {
                                     loading="lazy"
                                     src={process.env.PUBLIC_URL + "/images/product_demo.png"}
                                     alt="StockGlimpse Dashboard"
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-contain"
                                 />
                                 <div className="absolute inset-0 bg-black/40" />
                                 <div className="absolute inset-0 flex flex-col items-center justify-center">

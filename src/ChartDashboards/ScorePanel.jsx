@@ -35,9 +35,8 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     console.log("ScorePanel props:", { isPaid, trades, priceData });
-    
-    useEffect(() => {
 
+    useEffect(() => {
         if (isDemo) {
             setScores(DEMO_SCORES);
             return;
@@ -65,7 +64,7 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
                         },
                     }
                 );
-                setScores(res.data.scores);
+                setScores(res.data.scores ?? []);
             } catch (err) {
                 console.error("Score fetch error:", err);
                 setError("Could not load scores");
@@ -76,6 +75,8 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
 
         fetchScores();
     }, [isPaid, trades, priceData]);
+
+    const safeScores = scores ?? [];
 
     const getScoreColor = (score) => {
         if (score >= 75) return "#00c896";
@@ -90,12 +91,10 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
         return "bg-red-500";
     };
 
-    // Overall score = average across all trades
-    const overallScore = scores.length
-        ? Math.round(scores.reduce((sum, s) => sum + s.overall, 0) / scores.length)
+    const overallScore = safeScores.length
+        ? Math.round(safeScores.reduce((sum, s) => sum + s.overall, 0) / safeScores.length)
         : 0;
 
-    // Avg per parameter across all trades
     const paramKeys = ["trend", "momentum", "volume", "sr", "candle"];
     const paramLabels = {
         trend: "Trend",
@@ -106,14 +105,13 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
     };
 
     const aggregateParams = paramKeys.map((key) => {
-        const avg = scores.length
-            ? Math.round(scores.reduce((sum, s) => sum + (s.params?.[key]?.score ?? 0), 0) / scores.length)
+        const avg = safeScores.length
+            ? Math.round(safeScores.reduce((sum, s) => sum + (s.params?.[key]?.score ?? 0), 0) / safeScores.length)
             : 0;
-        const max = scores[0]?.params?.[key]?.max ?? 0;
+        const max = safeScores[0]?.params?.[key]?.max ?? 0;
         return { key, label: paramLabels[key], score: avg, max };
     });
 
-    // Gauge arc
     const circumference = Math.PI * 37;
     const progress = (overallScore / 100) * circumference;
 
@@ -121,13 +119,9 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
     if (!isPaid) {
         return (
             <div className="w-full relative rounded-b-xl overflow-hidden">
-
-                {/* Blurred REALISTIC preview — looks like their actual data */}
                 <div className="w-full bg-[#080f17] border-t border-[#1e3048] px-6 py-4 select-none pointer-events-none">
-                    {/* Fake gauge row — realistic looking */}
                     <div className="flex items-center gap-6 border-b border-[#1e3048] pb-4 mb-4 blur-[3px] opacity-80">
                         <div className="flex items-center gap-4 shrink-0">
-                            {/* Realistic gauge with a number */}
                             <div className="relative">
                                 <svg width="90" height="52" viewBox="0 0 90 52">
                                     <path d="M 8 48 A 37 37 0 0 1 82 48" fill="none" stroke="#1e3048" strokeWidth="7" strokeLinecap="round" />
@@ -165,8 +159,6 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
                             ))}
                         </div>
                     </div>
-
-                    {/* Fake trade cards — realistic */}
                     <div className="blur-[3px] opacity-80">
                         <p className="text-[#5a7a9a] text-xs uppercase tracking-widest font-semibold mb-3">Individual Trades</p>
                         <div className="flex gap-3">
@@ -201,14 +193,8 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
                         </div>
                     </div>
                 </div>
-
-                {/* Frosted overlay */}
                 <div className="absolute inset-0 bg-[#060d14]/75 backdrop-blur-[2px]" />
-
-                {/* ── Lock UI ── */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-
-                    {/* Pulsing lock */}
                     <div className="relative flex items-center justify-center w-14 h-14 mb-1">
                         <div className="absolute inset-0 rounded-full bg-[#3b82f6]/15 animate-pulse" />
                         <div className="absolute inset-[-5px] rounded-full border border-[#3b82f6]/20 animate-ping" style={{ animationDuration: "2.5s" }} />
@@ -219,13 +205,9 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
                             </svg>
                         </div>
                     </div>
-
-                    {/* Copy */}
                     <div className="text-center">
                         <p className="text-white text-md font-semibold tracking-wide">Stop entering at the wrong time</p>
                     </div>
-
-                    {/* CTA */}
                     <button onClick={() => window.location.assign("/pricing")}
                         className="group relative flex items-center gap-2 bg-[#3b82f6] hover:bg-[#2563eb] text-white text-xs font-bold px-6 py-2.5 rounded-lg transition-all duration-200 shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:shadow-[0_0_32px_rgba(59,130,246,0.65)] mt-1">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
@@ -239,6 +221,7 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
             </div>
         );
     }
+
     // ── Loading state ─────────────────────────────────────────────────
     if (loading) {
         return (
@@ -261,22 +244,17 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
     }
 
     // ── No scores yet ─────────────────────────────────────────────────
-    if (!scores.length) return null;
+    if (!safeScores.length) return null;
 
     return (
         <div className="w-full bg-[#080f17] border-t border-[#1e3048] rounded-b-xl overflow-hidden">
 
             {/* ── Row 1: Overall Score ──────────────────────────────────── */}
             <div className="flex items-center gap-6 px-6 py-4 border-b border-[#1e3048]">
-
-                {/* Gauge */}
                 <div className="flex items-center gap-4 shrink-0">
                     <div className="relative">
                         <svg width="90" height="52" viewBox="0 0 90 52">
-                            <path
-                                d="M 8 48 A 37 37 0 0 1 82 48"
-                                fill="none" stroke="#1e3048" strokeWidth="7" strokeLinecap="round"
-                            />
+                            <path d="M 8 48 A 37 37 0 0 1 82 48" fill="none" stroke="#1e3048" strokeWidth="7" strokeLinecap="round" />
                             <path
                                 d="M 8 48 A 37 37 0 0 1 82 48"
                                 fill="none"
@@ -298,11 +276,7 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
                         <p className="text-[#5a7a9a] text-xs mt-0.5">across all trades</p>
                     </div>
                 </div>
-
-                {/* Divider */}
                 <div className="w-px h-12 bg-[#1e3048] shrink-0" />
-
-                {/* Avg parameter bars */}
                 <div className="flex-1 grid grid-cols-5 gap-x-6 gap-y-1.5">
                     {aggregateParams.map((p) => (
                         <div key={p.key}>
@@ -326,16 +300,15 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
                 <p className="text-[#5a7a9a] text-xs uppercase tracking-widest font-semibold mb-3">
                     Individual Trades
                 </p>
-
                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-[#1e3048] scrollbar-track-transparent">
-                    {scores.map((s, i) => {
+                    {safeScores.map((s, i) => {
                         const trade = trades[i];
                         const params = [
-                            { label: "Trend", ...s.params.trend },
-                            { label: "Momentum", ...s.params.momentum },
-                            { label: "Volume", ...s.params.volume },
-                            { label: "S/R", ...s.params.sr },
-                            { label: "Candle", ...s.params.candle },
+                            { label: "Trend", ...s.params?.trend },
+                            { label: "Momentum", ...s.params?.momentum },
+                            { label: "Volume", ...s.params?.volume },
+                            { label: "S/R", ...s.params?.sr },
+                            { label: "Candle", ...s.params?.candle },
                         ];
 
                         return (
@@ -343,7 +316,6 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
                                 key={i}
                                 className="shrink-0 w-52 bg-[#0d1b2a] border border-[#1e3048] rounded-xl p-4 hover:border-[#2a4a6a] transition-colors"
                             >
-                                {/* Trade header */}
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-2">
                                         <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${s.trade_type === "buy"
@@ -356,45 +328,35 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
                                     </div>
                                     <span className="text-[#5a7a9a] text-xs">{trade?.qty ?? ""} qty</span>
                                 </div>
-
-                                {/* Score */}
                                 <div className="flex items-center gap-2 mb-3">
                                     <span className="text-2xl font-bold" style={{ color: getScoreColor(s.overall) }}>
                                         {s.overall}
                                     </span>
                                     <span className="text-[#5a7a9a] text-xs">/100</span>
                                 </div>
-
-                                {/* Divider */}
                                 <div className="h-px bg-[#1e3048] mb-3" />
-
-                                {/* Param breakdown */}
                                 <div className="flex flex-col gap-1.5">
                                     {params.map((p) => (
                                         <div key={p.label} className="flex items-center gap-2">
                                             <span className="text-[#5a7a9a] text-xs w-16 shrink-0">{p.label}</span>
                                             <div className="flex-1 bg-[#0f1923] rounded-full h-1 overflow-hidden">
                                                 <div
-                                                    className={`h-1 rounded-full ${getBarBg(p.score, p.max)}`}
-                                                    style={{ width: `${(p.score / p.max) * 100}%` }}
+                                                    className={`h-1 rounded-full ${getBarBg(p.score ?? 0, p.max ?? 1)}`}
+                                                    style={{ width: `${((p.score ?? 0) / (p.max ?? 1)) * 100}%` }}
                                                 />
                                             </div>
                                             <span className="text-white text-xs font-semibold w-8 text-right shrink-0">
-                                                {p.score}
+                                                {p.score ?? 0}
                                             </span>
                                         </div>
                                     ))}
                                 </div>
-
-                                {/* RSI detail tooltip */}
-                                {s.params.momentum?.detail?.rsi && (
+                                {s.params?.momentum?.detail?.rsi && (
                                     <p className="text-[#5a7a9a] text-xs mt-3">
                                         RSI: {s.params.momentum.detail.rsi}
                                     </p>
                                 )}
-
-                                {/* Candle description */}
-                                {s.params.candle?.detail?.description && (
+                                {s.params?.candle?.detail?.description && (
                                     <p className="text-[#5a7a9a] text-xs mt-1 leading-relaxed">
                                         {s.params.candle.detail.description}
                                     </p>
@@ -404,7 +366,6 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
                     })}
                 </div>
             </div>
-
         </div>
     );
 };

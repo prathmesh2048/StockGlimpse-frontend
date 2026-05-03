@@ -191,7 +191,7 @@ const ScoreTrendChart = ({ trades, scoreMap }) => {
 // ── Trade Card ────────────────────────────────────────────────────
 const TradeCard = ({ trade, score, onClick }) => {
     const [expanded, setExpanded] = useState(false);
-
+    console.log("Rendering TradeCard for", trade.symbol, "with score", score);
     if (!score || score.error) {
         return (
             <div className="w-full bg-[#0d1b2a] border border-[#1e3048] rounded-xl px-5 py-4 flex items-center gap-4">
