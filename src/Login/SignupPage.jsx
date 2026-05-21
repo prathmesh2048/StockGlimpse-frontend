@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import "./LoginPage.css";
 import { setToken } from '../utils/auth';
 import LoginButton from "./LoginButton";
+import ENV from "../config";
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -24,7 +25,7 @@ const SignupPage = () => {
 
     // Make the API call to signup
     try {
-      const response = await fetch("http://localhost:8000/auth/api/signup/", {
+      const response = await fetch(`${ENV.BASE_API_URL}/auth/api/signup/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
