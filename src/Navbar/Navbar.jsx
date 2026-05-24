@@ -40,13 +40,12 @@ const Navbar = ({ isLandingPage = false }) => {
       {!isLandingPage && <div className="h-16" />}
 
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all ${
-          !isLandingPage
-            ? "bg-gradient-to-tr from-[#01141a] to-[#01222c] border-b border-white/10"
-            : scrolled
+        className={`fixed top-0 left-0 right-0 z-50 transition-all ${!isLandingPage
+          ? "bg-gradient-to-tr from-[#01141a] to-[#01222c] border-b border-white/10"
+          : scrolled
             ? "bg-[#0f172a]/90 backdrop-blur-md border-b border-white/10"
             : "bg-transparent"
-        }`}
+          }`}
       >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
@@ -54,18 +53,16 @@ const Navbar = ({ isLandingPage = false }) => {
             onClick={() => navigate("/")}
             className="flex items-center gap-2 cursor-pointer"
           >
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <CandlestickChart className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-bold text-white">
-              Stock<span className="text-blue-500">Glimpse</span>
-            </span>
+            <img
+              src={process.env.PUBLIC_URL + "/images/tradeye.png"}
+              alt="Tradeye"
+              className="h-10 w-auto object-contain -ml-2"
+            />
           </div>
 
           {/* Desktop */}
           <div className="hidden md:flex items-center gap-6">
             <Link to="/" className={link}>Home</Link>
-            <Link to="/about" className={link}>About</Link>
             <Link to="/pricing" className={link}>Pricing</Link>
 
 
@@ -89,8 +86,8 @@ const Navbar = ({ isLandingPage = false }) => {
                   {!isPaid && (
                     <span className="flex items-center gap-1 bg-[rgba(59,130,246,0.12)] border border-[rgba(59,130,246,0.25)] text-[#3b82f6] text-[10px] font-semibold px-1.5 py-0.5 rounded ml-1">
                       <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2"/>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        <rect x="3" y="11" width="18" height="11" rx="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
                       Pro
                     </span>
@@ -133,7 +130,6 @@ const Navbar = ({ isLandingPage = false }) => {
         {open && (
           <div className="md:hidden bg-[#0f172a] border-t border-white/10 px-6 py-4 flex flex-col gap-3">
             <Link to="/" className={link} onClick={() => setOpen(false)}>Home</Link>
-            <Link to="/about" className={link} onClick={() => setOpen(false)}>About</Link>
             <Link to="/pricing" className={link}>Pricing</Link>
 
             {!loggedIn ? (
@@ -156,8 +152,8 @@ const Navbar = ({ isLandingPage = false }) => {
                   {!isPaid && (
                     <span className="flex items-center gap-1 bg-[rgba(59,130,246,0.12)] border border-[rgba(59,130,246,0.25)] text-[#3b82f6] text-[10px] font-semibold px-1.5 py-0.5 rounded ml-1">
                       <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2"/>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        <rect x="3" y="11" width="18" height="11" rx="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                       </svg>
                       Pro
                     </span>

@@ -6,7 +6,6 @@ import LoginPage from './Login/LoginPage';
 import SignupPage from './Login/SignupPage';
 import ForgotPasswordPage from './Login/ForgotPasswordPage';
 import ResetPasswordPage from './Login/ResetPasswordPage';
-// import ChartScreen from './Chart/ChartScreen';
 import ChartScreen from './Chart/ChartScreen';
 import DashBoard from './ChartDashboards/Dashboard';
 import FileUpload from './Onboarding/FileUpload';

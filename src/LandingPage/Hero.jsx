@@ -7,42 +7,30 @@ const Hero = ({ isLoggedIn }) => {
     const videoRef = useRef(null);
     const containerRef = useRef(null);
     const [hasStarted, setHasStarted] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(false);
 
+    // Only pause on scroll out — never auto-play (mobile blocks it)
     useEffect(() => {
+        if (!hasStarted) return;
+
         const observer = new IntersectionObserver(
             (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.intersectionRatio >= 0.85 && !hasStarted) {
-                        videoRef.current?.play()
-                            .then(() => {
-                                setIsPlaying(true);
-                                setHasStarted(true);
-                            })
-                            .catch(() => { });
-                    } else if (entry.intersectionRatio < 0.85 && isPlaying) {
-                        videoRef.current?.pause();
-                        setIsPlaying(false);
-                    }
-                });
+                if (entries[0].intersectionRatio < 0.5) {
+                    videoRef.current?.pause();
+                }
             },
-            { threshold: [0.85] }
+            { threshold: [0.5] }
         );
 
         if (containerRef.current) observer.observe(containerRef.current);
         return () => observer.disconnect();
-    }, [isPlaying, hasStarted]);
+    }, [hasStarted]);
 
     const handlePlayClick = () => {
-        if (!hasStarted) {
-            videoRef.current?.play()
-                .then(() => {
-                    setIsPlaying(true);
-                    setHasStarted(true);
-                })
-                .catch(console.error);
-        }
-        // Once started, native controls handle everything
+        setHasStarted(true);
+        // Let the browser's native video controls take over from here
+        setTimeout(() => {
+            videoRef.current?.play().catch(() => {});
+        }, 0);
     };
 
     return (
@@ -100,7 +88,7 @@ const Hero = ({ isLoggedIn }) => {
                     </button>
                 </div>
 
-                {/* VIDEO IN HERO */}
+                {/* VIDEO */}
                 <div className="w-full max-w-6xl relative group">
 
                     {/* Glow */}
@@ -109,25 +97,22 @@ const Hero = ({ isLoggedIn }) => {
                     <div
                         ref={containerRef}
                         className="relative bg-[#131722] rounded-xl border border-slate-700/50 shadow-2xl overflow-hidden aspect-video"
-
                     >
-                        {/* ✅ Native controls, muted by default, full sound on unmute */}
+                        {/* Video — always in DOM, hidden behind overlay until started */}
                         <video
                             ref={videoRef}
-                            muted={true}
                             playsInline
-                            controls
-                            preload='none'
-                            poster={process.env.PUBLIC_URL + "/images/product_demo.png"}
-                            className="w-full h-full object-contain"
+                            controls={hasStarted}
+                            preload="none"
+                            className="absolute inset-0 w-full h-full object-contain"
                         >
                             <source src={process.env.PUBLIC_URL + "/videos/demo_compressed.mp4"} type="video/mp4" />
                         </video>
 
-                        {/* Thumbnail + play button overlay before video starts */}
+                        {/* Thumbnail overlay — sits on top until user clicks play */}
                         {!hasStarted && (
                             <div
-                                className="absolute inset-0 cursor-pointer"
+                                className="absolute inset-0 cursor-pointer z-10"
                                 onClick={handlePlayClick}
                             >
                                 <img
@@ -137,17 +122,13 @@ const Hero = ({ isLoggedIn }) => {
                                     className="w-full h-full object-contain"
                                 />
                                 <div className="absolute inset-0 bg-black/40" />
-                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent opacity-40" />
+                                <div className="absolute inset-0 flex items-center justify-center">
                                     <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center shadow-[0_0_60px_rgba(37,99,235,0.6)] hover:scale-110 transition-transform duration-300">
                                         <Play className="w-8 h-8 text-white fill-current ml-1" />
                                     </div>
                                 </div>
                             </div>
-                        )}
-
-                        {/* Bottom fade — only show before start so it doesn't cover controls */}
-                        {!hasStarted && (
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#020617] via-transparent to-transparent opacity-40 pointer-events-none" />
                         )}
                     </div>
                 </div>
