@@ -64,6 +64,7 @@ const Navbar = ({ isLandingPage = false }) => {
           <div className="hidden md:flex items-center gap-6">
             <Link to="/" className={link}>Home</Link>
             <Link to="/pricing" className={link}>Pricing</Link>
+            <Link to="/select-broker" className={link}>Analyze</Link>
 
 
             {!loggedIn ? (
@@ -131,6 +132,7 @@ const Navbar = ({ isLandingPage = false }) => {
           <div className="md:hidden bg-[#0f172a] border-t border-white/10 px-6 py-4 flex flex-col gap-3">
             <Link to="/" className={link} onClick={() => setOpen(false)}>Home</Link>
             <Link to="/pricing" className={link}>Pricing</Link>
+            <Link to="/select-broker" className={link}>Analyze</Link>
 
             {!loggedIn ? (
               <>

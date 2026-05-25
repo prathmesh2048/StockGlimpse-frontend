@@ -151,6 +151,7 @@ export function drawBrushGradient(
 ) {
   if (!chartData?.length) return;
 
+  const isNarrow = winWidth < 160;
   let defs = d3.select(`#${element}`).select("defs");
   if (defs.empty()) defs = d3.select(`#${element}`).append("defs");
 
@@ -231,7 +232,11 @@ export function drawBrushGradient(
     .attr("fill", isUp ? "limegreen" : "red")
     .style("font-size", "12px")
     .style("font-weight", "bold")
-    .text(`Window Move: ${windowPct >= 0 ? "+" : ""}${windowPct.toFixed(2)}%`);
+    .text(
+      isNarrow
+        ? `${windowPct >= 0 ? "+" : ""}${windowPct.toFixed(2)}%`
+        : `Window Move: ${windowPct >= 0 ? "+" : ""}${windowPct.toFixed(2)}%`,
+    );
 
   /* ---------- USER P&L (top-left of window) ---------- */
   if (!annotationData?.length) return;
@@ -263,7 +268,7 @@ export function drawBrushGradient(
 
   // top-left padding inside window
   const pnlX = winX + 8;
-  const pnlY = 16;
+  const pnlY = 28;
 
   const pnlGroup = brushLayer
     .append("g")
@@ -275,12 +280,29 @@ export function drawBrushGradient(
     .attr("fill", pnlColor)
     .style("font-size", "12px")
     .style("font-weight", "bold")
-    .text(`Your P&L: ${total >= 0 ? "+" : ""}₹${total.toFixed(0)}`);
+    .text(`P&L: ${total >= 0 ? "+" : ""}₹${total.toFixed(0)}`);
 
-  pnlGroup
-    .append("text")
-    .attr("y", 14)
-    .attr("fill", "#999")
-    .style("font-size", "10px")
-    .text(`Booked: ₹${booked.toFixed(0)} | Open: ₹${open.toFixed(0)}`);
+  if (isNarrow) {
+    // split into two lines
+    pnlGroup
+      .append("text")
+      .attr("y", 14)
+      .attr("fill", "#999")
+      .style("font-size", "9px")
+      .text(`B: ₹${booked.toFixed(0)}`);
+
+    pnlGroup
+      .append("text")
+      .attr("y", 25)
+      .attr("fill", "#999")
+      .style("font-size", "9px")
+      .text(`O: ₹${open.toFixed(0)}`);
+  } else {
+    pnlGroup
+      .append("text")
+      .attr("y", 14)
+      .attr("fill", "#999")
+      .style("font-size", "10px")
+      .text(`Booked: ₹${booked.toFixed(0)} | Open: ₹${open.toFixed(0)}`);
+  }
 }

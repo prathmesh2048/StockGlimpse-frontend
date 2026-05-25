@@ -104,22 +104,23 @@ export const findFixedDataIndex = (dataPoint, data) => {
   return index;
 };
 
-export const modifyAnnotationEnd = (group, colors) => {
-  group.selectAll(".annotation-note-title").style("font-size", "13px");
+export const modifyAnnotationEnd = (group, colors, isMobile = false) => {
+  group.selectAll(".annotation-note-title")
+    .style("font-size", isMobile ? "10px" : "13px");
 
   group
     .selectAll(".annotation-note-label")
-    .style("font-size", "11px")
+    .style("font-size", isMobile ? "9px" : "11px")
     .style("fill", colors.annotationTextColor);
 
-  // Add the "✏️ Notes" clickable text
+  // Notes tspan
   group
     .selectAll(".annotation-note-label")
     .append("tspan")
     .attr("x", 0)
     .attr("dy", "1.8em")
     .attr("class", "annotation-add-note")
-    .style("font-size", "10px")
+    .style("font-size", isMobile ? "8px" : "10px")
     .style("fill", "#9aa0a6")
     .style("cursor", "pointer")
     .text("Notes ✏️")

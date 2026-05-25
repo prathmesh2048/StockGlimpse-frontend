@@ -56,7 +56,7 @@ class CandleStickChart {
   #candlePattern = null;
   #candlePatternFetching = false;
   #candlePatternActive = false;
-
+  #brushState = null
 
   #ema9 = null;
   #ema21 = null;
@@ -607,7 +607,7 @@ class CandleStickChart {
       .text("Unlock ₹49/mo")
       .on("click", () => {
         window.location.href = "/pricing";
-        toast.remove(); 
+        toast.remove();
       });
 
     setTimeout(() => toast.remove(), 3000);
@@ -794,7 +794,7 @@ class CandleStickChart {
       .style('cursor', 'crosshair')
       .style('background-color', this.#colors.gridBackground)
       .attr('id', this.#objectIDs.svgId)
-      .style('margin-top', '-50px');
+    // .style('margin-top', '-50px');
 
     const sepColor = this.#colors.grid || '#2a3a4a';
 
@@ -2144,7 +2144,7 @@ class CandleStickChart {
     });
 
     const tempPlacedBoxes = [];
-
+    const isMobile = this.#config.svgWidth < this.#config.mobileBreakPoint;
     const makeAnnotation = annotation()
       .editMode(true)
       .notePadding(15)
@@ -2168,8 +2168,8 @@ class CandleStickChart {
             dy = override.dy;
           } else {
             // base offsets
-            dx = d.transactionType === "buy" ? -150 : 150;
-            dy = d.transactionType === "buy" ? 50 : -50;
+            dx = d.transactionType === "buy" ? (isMobile ? -80 : -150) : (isMobile ? 80 : 150);
+            dy = d.transactionType === "buy" ? (isMobile ? 30 : 50) : (isMobile ? -30 : -50);
 
             // get anchor position on chart
             const ax = this.#xScaleFunc(parseTime(d.Date));
@@ -2192,7 +2192,11 @@ class CandleStickChart {
               title: d.title || `₹${d.Close}`,
               label: d.label || '',
               align: 'middle',
-              wrap: 150
+              wrap: isMobile ? 80 : 150
+            },
+            subject: {
+              radius: isMobile ? 14 : 20,
+              radiusPadding: 5
             },
             data: d,
             dx,
@@ -2219,7 +2223,7 @@ class CandleStickChart {
       .raise();
 
     // drawTradeGradientAreas(this, group);
-    modifyAnnotationEnd(group, this.#colors);
+    modifyAnnotationEnd(group, this.#colors, isMobile);
 
   }
 
@@ -2560,8 +2564,8 @@ class CandleStickChart {
     const height = this.#config.svgHeight;
     const width = this.#config.svgWidth;
 
-    let winX = width * 0.1;
-    let winWidth = width * 0.12;
+    let winX = this.#brushState?.winX ?? width * 0.1;
+    let winWidth = this.#brushState?.winWidth ?? width * 0.12;
 
     const handleW = 5;
     const handleHeight = height * 0.2;
@@ -2663,6 +2667,7 @@ class CandleStickChart {
       .on("pointerdown", e => e.stopPropagation())
       .on("click", () => {
         this.#isPnLWindowClosed = true;
+        this.#brushState = null;
         brushLayer.remove();
         this.draw();
       });
@@ -2685,6 +2690,8 @@ class CandleStickChart {
     const update = () => {
       winX = Math.round(winX);
       winWidth = Math.round(winWidth);
+
+      this.#brushState = { winX, winWidth };
 
       windowRect
         .attr("x", winX)

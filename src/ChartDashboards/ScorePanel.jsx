@@ -139,24 +139,29 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
                             </div>
                         </div>
                         <div className="w-px h-12 bg-[#1e3048]" />
-                        <div className="flex-1 grid grid-cols-5 gap-x-6 gap-y-1.5">
-                            {[
-                                { label: "Trend", score: 22, max: 30, color: "bg-emerald-500" },
-                                { label: "Momentum", score: 8, max: 20, color: "bg-red-500" },
-                                { label: "Volume", score: 11, max: 15, color: "bg-yellow-400" },
-                                { label: "S/R Placement", score: 21, max: 25, color: "bg-emerald-500" },
-                                { label: "Candle Pattern", score: 10, max: 10, color: "bg-emerald-500" },
-                            ].map((p) => (
-                                <div key={p.label}>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className="text-[#5a7a9a] text-xs">{p.label}</span>
-                                        <span className="text-white text-xs font-semibold">{p.score}/{p.max}</span>
+                        <div className="flex items-center gap-4 px-4 py-4 border-b border-[#1e3048] overflow-x-auto">
+                            <div
+                                className="grid grid-cols-5 gap-x-6 gap-y-1.5"
+                                style={{ minWidth: 0, flex: 1 }}
+                            >
+                                {[
+                                    { label: "Trend", score: 22, max: 30, color: "bg-emerald-500" },
+                                    { label: "Momentum", score: 8, max: 20, color: "bg-red-500" },
+                                    { label: "Volume", score: 11, max: 15, color: "bg-yellow-400" },
+                                    { label: "S/R Placement", score: 21, max: 25, color: "bg-emerald-500" },
+                                    { label: "Candle Pattern", score: 10, max: 10, color: "bg-emerald-500" },
+                                ].map((p) => (
+                                    <div key={p.label}>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="text-[#5a7a9a] text-xs">{p.label}</span>
+                                            <span className="text-white text-xs font-semibold">{p.score}/{p.max}</span>
+                                        </div>
+                                        <div className="w-full bg-[#0f1923] rounded-full h-1.5 overflow-hidden">
+                                            <div className={`h-1.5 rounded-full ${p.color}`} style={{ width: `${(p.score / p.max) * 100}%` }} />
+                                        </div>
                                     </div>
-                                    <div className="w-full bg-[#0f1923] rounded-full h-1.5 overflow-hidden">
-                                        <div className={`h-1.5 rounded-full ${p.color}`} style={{ width: `${(p.score / p.max) * 100}%` }} />
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </div>
                     <div className="blur-[3px] opacity-80">
@@ -250,48 +255,56 @@ const ScorePanel = ({ isDemo = false, isPaid = false, trades = [], priceData = [
         <div className="w-full bg-[#080f17] border-t border-[#1e3048] rounded-b-xl overflow-hidden">
 
             {/* ── Row 1: Overall Score ──────────────────────────────────── */}
-            <div className="flex items-center gap-6 px-6 py-4 border-b border-[#1e3048]">
-                <div className="flex items-center gap-4 shrink-0">
-                    <div className="relative">
-                        <svg width="90" height="52" viewBox="0 0 90 52">
-                            <path d="M 8 48 A 37 37 0 0 1 82 48" fill="none" stroke="#1e3048" strokeWidth="7" strokeLinecap="round" />
-                            <path
-                                d="M 8 48 A 37 37 0 0 1 82 48"
-                                fill="none"
-                                stroke={getScoreColor(overallScore)}
-                                strokeWidth="7"
-                                strokeLinecap="round"
-                                strokeDasharray={`${progress} ${circumference}`}
-                            />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-end pb-0.5">
-                            <span className="text-xl font-bold leading-none" style={{ color: getScoreColor(overallScore) }}>
-                                {overallScore}
-                            </span>
-                        </div>
-                    </div>
-                    <div>
-                        <p className="text-white text-sm font-semibold leading-tight">Overall</p>
-                        <p className="text-white text-sm font-semibold leading-tight">Score</p>
-                        <p className="text-[#5a7a9a] text-xs mt-0.5">across all trades</p>
-                    </div>
-                </div>
-                <div className="w-px h-12 bg-[#1e3048] shrink-0" />
-                <div className="flex-1 grid grid-cols-5 gap-x-6 gap-y-1.5">
-                    {aggregateParams.map((p) => (
-                        <div key={p.key}>
-                            <div className="flex items-center justify-between mb-1">
-                                <span className="text-[#5a7a9a] text-xs">{p.label}</span>
-                                <span className="text-white text-xs font-semibold">{p.score}/{p.max}</span>
-                            </div>
-                            <div className="w-full bg-[#0f1923] rounded-full h-1.5 overflow-hidden">
-                                <div
-                                    className={`h-1.5 rounded-full ${getBarBg(p.score, p.max)}`}
-                                    style={{ width: `${(p.score / p.max) * 100}%` }}
+            <div className="px-4 py-4 border-b border-[#1e3048]">
+
+                {/* Top: gauge + divider + params */}
+                <div className="flex items-center gap-4">
+
+                    {/* Gauge */}
+                    <div className="flex items-center gap-3 shrink-0">
+                        <div className="relative">
+                            <svg width="90" height="52" viewBox="0 0 90 52">
+                                <path d="M 8 48 A 37 37 0 0 1 82 48" fill="none" stroke="#1e3048" strokeWidth="7" strokeLinecap="round" />
+                                <path
+                                    d="M 8 48 A 37 37 0 0 1 82 48"
+                                    fill="none"
+                                    stroke={getScoreColor(overallScore)}
+                                    strokeWidth="7"
+                                    strokeLinecap="round"
+                                    strokeDasharray={`${progress} ${circumference}`}
                                 />
+                            </svg>
+                            <div className="absolute inset-0 flex flex-col items-center justify-end pb-0.5">
+                                <span className="text-xl font-bold leading-none" style={{ color: getScoreColor(overallScore) }}>
+                                    {overallScore}
+                                </span>
                             </div>
                         </div>
-                    ))}
+                        <div className="shrink-0">
+                            <p className="text-white text-sm font-semibold leading-tight">Overall</p>
+                            <p className="text-white text-sm font-semibold leading-tight">Score</p>
+                            <p className="text-[#5a7a9a] text-xs mt-0.5">across all trades</p>
+                        </div>
+                    </div>
+
+                    <div className="w-px self-stretch bg-[#1e3048] shrink-0" />
+
+                    {/* Params — always vertical list */}
+                    <div className="flex-1 flex flex-col gap-2">
+                        {aggregateParams.map((p) => (
+                            <div key={p.key} className="flex items-center gap-3">
+                                <span className="text-[#5a7a9a] text-xs w-24 shrink-0">{p.label}</span>
+                                <div className="flex-1 bg-[#0f1923] rounded-full h-1.5 overflow-hidden">
+                                    <div
+                                        className={`h-1.5 rounded-full ${getBarBg(p.score, p.max)}`}
+                                        style={{ width: `${(p.score / p.max) * 100}%` }}
+                                    />
+                                </div>
+                                <span className="text-white text-xs font-semibold w-10 text-right shrink-0">{p.score}/{p.max}</span>
+                            </div>
+                        ))}
+                    </div>
+
                 </div>
             </div>
 

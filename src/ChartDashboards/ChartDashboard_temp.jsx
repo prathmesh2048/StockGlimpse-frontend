@@ -148,7 +148,7 @@ const Chart = ({ fromHistory, symbol, trades, onReady}) => {
           ref={chartRef}
           style={{
             width: "100%",
-            height: "inherit",
+            height: "100%",
             display: loading ? "none" : "block"
           }}
         />
