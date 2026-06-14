@@ -7,7 +7,8 @@ import {
   annotationCustomType,
   annotationCalloutRect
 } from 'd3-svg-annotation';
-
+import html2canvas from 'html2canvas';
+import { toBlob } from 'html-to-image';
 import axios from 'axios';
 import ENV from "../config"; // import your config file
 
@@ -246,73 +247,66 @@ class CandleStickChart {
       .html(this.#getChartTypeIcon());
   }
 
-  async shareChartScreenshot() {
-    const element = document.querySelector(".stockChartCard");
-    if (!element) return;
 
+
+  async shareChartScreenshot() {
     const toolbar = document.getElementById(this.#objectIDs.toolsBtnsContainer);
     const dropdown = document.getElementById(`${this.#objectIDs.toolsBtnsContainer}-dropdown`);
+    const card = toolbar?.closest(".stockChartCard");
+    if (!card) return;
 
-    // ── Inject !important overrides ───────────────────────
-    const styleTag = document.createElement("style");
-    styleTag.id = "screenshot-override";
-    styleTag.textContent = `
-      .stockChartCard,
-      .stockChartCard *,
-      .stockChartBody,
-      .stockChartBody > div,
-      .stockChartBody > div > div,
-      [class*="ChartDashboard"] {
-        border: none !important;
-        outline: none !important;
-        box-shadow: none !important;
-        background-color: #0b1220 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-      }
-      .stockChartHeader {
-        padding: 8px 12px !important;
-      }
+    // ── Show loader (same as your original) ──────────────────
+    const loader = document.createElement("div");
+    loader.id = "screenshot-loader";
+    loader.style.cssText = `
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
     `;
-    document.head.appendChild(styleTag);
+    loader.innerHTML = `
+      <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+        #screenshot-loader .spinner {
+          width: 44px; height: 44px;
+          border: 3px solid rgba(255,255,255,0.1);
+          border-top-color: #22d3ee;
+          border-radius: 50%;
+          animation: spin 0.7s linear infinite;
+          margin-bottom: 16px;
+        }
+        #screenshot-loader .label {
+          color: #fff;
+          font-size: 14px;
+          font-family: sans-serif;
+          font-weight: 500;
+          animation: pulse 1.2s ease infinite;
+          letter-spacing: 0.3px;
+        }
+      </style>
+      <div class="spinner"></div>
+      <div class="label">Capturing screenshot…</div>
+    `;
+    document.body.appendChild(loader);
 
     if (toolbar) toolbar.style.visibility = "hidden";
     if (dropdown) dropdown.style.visibility = "hidden";
 
-    // ── Flash scoped to card ──────────────────────────────
-    const rect = element.getBoundingClientRect();
-    const flash = document.createElement("div");
-    flash.style.cssText = `
-      position: fixed;
-      top: ${rect.top}px;
-      left: ${rect.left}px;
-      width: ${rect.width}px;
-      height: ${rect.height}px;
-      background: white;
-      z-index: 99999;
-      opacity: 0;
-      pointer-events: none;
-      border-radius: 8px;
-      transition: opacity 0.08s ease;
-    `;
-    document.body.appendChild(flash);
-    requestAnimationFrame(() => {
-      flash.style.opacity = "0.6";
-      setTimeout(() => {
-        flash.style.opacity = "0";
-        setTimeout(() => flash.remove(), 200);
-      }, 80);
-    });
-
-    await new Promise(r => setTimeout(r, 50));
-
     try {
-      const blob = await domtoimage.toBlob(element, {
-        bgcolor: "#0b1220",
-        scale: 2,
-        width: element.scrollWidth,
-        height: element.scrollHeight,
+      const blob = await toBlob(card, {
+        backgroundColor: "#0b1220",
+        pixelRatio: 2,
+        filter: (node) => node.id !== "screenshot-loader",
       });
+
+      if (!blob) throw new Error("toBlob returned null");
 
       const imageUrl = URL.createObjectURL(blob);
       this.#showShareModal(imageUrl, blob);
@@ -321,167 +315,316 @@ class CandleStickChart {
       console.error("Capture failed:", err);
       this.#showToast("❌ Capture failed");
     } finally {
-      styleTag.remove();
       if (toolbar) toolbar.style.visibility = "visible";
       if (dropdown) dropdown.style.visibility = "visible";
+      loader.remove();
     }
   }
-
   #showShareModal(imageUrl, blob) {
 
-    // ── Inject animations once ────────────────────────────
+    // ── Inject styles once ────────────────────────────────
     if (!document.getElementById("share-modal-styles")) {
       const style = document.createElement("style");
       style.id = "share-modal-styles";
       style.textContent = `
-        @keyframes smFadeIn { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes smSlideUp { from { transform: translateY(30px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+        @keyframes smFadeIn  { from{opacity:0}         to{opacity:1} }
+        @keyframes smSlideUp { from{transform:translateY(24px);opacity:0} to{transform:translateY(0);opacity:1} }
+        @keyframes teToastIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+        .te-modal *{box-sizing:border-box;margin:0;padding:0;}
+        .te-modal button{font-family:inherit;cursor:pointer;}
+        .te-close-btn:hover{background:#1a3050!important;color:#e2f0ff!important;}
+        .te-copy-btn:hover{background:#0ea5e9!important;}
+        .te-dl-btn:hover{background:#1a3050!important;border-color:#2a4a70!important;color:#e2f0ff!important;}
+        .te-social-btn:hover{background:#1a3050!important;border-color:#2a4a70!important;}
+        .te-social-btn:hover svg{color:#22d3ee;}
       `;
       document.head.appendChild(style);
     }
 
-    // ── Backdrop ──────────────────────────────────────────
-    const backdrop = document.createElement("div");
-    backdrop.style.cssText = `
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.75);
-      z-index: 99998;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: smFadeIn 0.2s ease;
-    `;
+    // ── Watermark: bottom-right corner ───────────────────
+    const applyWatermark = (srcUrl) => new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement("canvas");
+        c.width = img.naturalWidth;
+        c.height = img.naturalHeight;
+        const ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0);
 
-    // ── Modal ─────────────────────────────────────────────
-    const modal = document.createElement("div");
-    modal.style.cssText = `
-      background: #0d1b2a;
-      border: 1px solid #1e3048;
-      border-radius: 16px;
-      padding: 20px;
-      width: 480px;
-      max-width: 95vw;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.6);
-      animation: smSlideUp 0.25s ease;
-      font-family: sans-serif;
-    `;
+        // Professional watermark in bottom-right
+        const padding = Math.max(20, c.width * 0.02);
+        const fontSize = Math.max(16, c.width * 0.025);
+        const text = "tradeye.in";
+        
+        ctx.font = `600 ${fontSize}px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif`;
+        ctx.fillStyle = "rgba(255,255,255,0.35)";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "bottom";
 
-    // ── Header ────────────────────────────────────────────
-    const header = document.createElement("div");
-    header.style.cssText = `
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
-    `;
-    header.innerHTML = `
-      <span style="color:#fff; font-size:15px; font-weight:600;">📸 Share Your Trade</span>
-      <span id="share-modal-close" style="color:#888; font-size:20px; cursor:pointer; line-height:1; transition: color 0.15s;">✕</span>
-    `;
+        const x = c.width - padding;
+        const y = c.height - padding;
+        
+        ctx.fillText(text, x, y);
 
-    // ── Screenshot preview ────────────────────────────────
-    const img = document.createElement("img");
-    img.src = imageUrl;
-    img.style.cssText = `
-      width: 100%;
-      border-radius: 10px;
-      border: 1px solid #1e3048;
-      margin-bottom: 16px;
-      display: block;
-    `;
+        resolve(c.toDataURL("image/png"));
+      };
+      img.src = srcUrl;
+    });
 
-    // ── Share buttons ─────────────────────────────────────
-    const btnRow = document.createElement("div");
-    btnRow.style.cssText = `
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    `;
+    // ── Build modal async after watermark ─────────────────
+    applyWatermark(imageUrl).then((wmDataUrl) => {
 
-    const makeBtn = (label, icon, bg, action) => {
-      const btn = document.createElement("button");
-      btn.style.cssText = `
-        flex: 1;
-        min-width: 100px;
-        padding: 10px 12px;
-        background: ${bg};
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        font-size: 13px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        font-family: sans-serif;
-        font-weight: 500;
-        transition: opacity 0.15s;
+      // Blob from watermarked dataUrl (for clipboard/share)
+      const byteStr = atob(wmDataUrl.split(",")[1]);
+      const ab = new ArrayBuffer(byteStr.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteStr.length; i++) ia[i] = byteStr.charCodeAt(i);
+      const wmBlob = new Blob([ab], { type: "image/png" });
+
+      // ── Helpers ───────────────────────────────────────────
+      const div = (css = "") => { const el = document.createElement("div"); el.style.cssText = css; return el; };
+      const btn = (css = "") => { const el = document.createElement("button"); el.style.cssText = css; return el; };
+      const span = (txt, css = "") => { const el = document.createElement("span"); el.style.cssText = css; el.textContent = txt; return el; };
+
+      // Share URL & caption
+      const shareUrl = "https://tradeye.in";
+      const directLink = `tradeye.in/t/caplipoint-${Date.now().toString().slice(-4)}`;
+      const captionText = `📈Trade captured & analysed on tradeye.in\nBacktested. Scored. Tracked — all in one place.\n#trading #stockmarket #tradeye`;
+      const encodedCap = encodeURIComponent(`📈 Trade captured & analysed on tradeye.in — Backtested. Scored. Tracked. #trading #tradeye`);
+      const encodedUrl = encodeURIComponent(shareUrl);
+
+      // ── Backdrop ──────────────────────────────────────────
+      const backdrop = div(`
+        position:fixed;inset:0;background:rgba(0,0,0,0.82);
+        z-index:99998;display:flex;align-items:center;justify-content:center;
+        animation:smFadeIn 0.2s ease;
+      `);
+      backdrop.className = "te-modal";
+
+      // ── Modal ─────────────────────────────────────────────
+      const modal = div(`
+        background:#0d1b2a;border:1px solid #1a3050;border-radius:16px;
+        width:500px;max-width:95vw;
+        box-shadow:0 24px 64px rgba(0,0,0,0.75);
+        animation:smSlideUp 0.25s ease;
+        font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+        overflow:hidden;
+      `);
+
+      // ── Header ────────────────────────────────────────────
+      const header = div(`
+        display:flex;align-items:center;justify-content:space-between;
+        padding:16px 20px 14px;border-bottom:1px solid #1a3050;
+      `);
+      const titleWrap = div(`display:flex;align-items:center;gap:10px;`);
+      const titleIcon = div(`
+        width:30px;height:30px;background:#0ea5e9;border-radius:8px;
+        display:flex;align-items:center;justify-content:center;flex-shrink:0;
+      `);
+      titleIcon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`;
+      titleWrap.appendChild(titleIcon);
+      titleWrap.appendChild(span("Share Your Trade", "color:#e2f0ff;font-size:15px;font-weight:600;letter-spacing:0.2px;"));
+      const closeBtn = btn(`
+        width:28px;height:28px;border-radius:6px;border:1px solid #1a3050;
+        background:transparent;color:#5a7a99;display:flex;align-items:center;
+        justify-content:center;transition:all 0.15s;flex-shrink:0;
+      `);
+      closeBtn.className = "te-close-btn";
+      closeBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+      header.appendChild(titleWrap);
+      header.appendChild(closeBtn);
+
+      // ── Preview ───────────────────────────────────────────
+      const previewWrap = div(`padding:16px 20px 0;`);
+      const previewImg = document.createElement("img");
+      previewImg.src = wmDataUrl;
+      previewImg.style.cssText = `width:100%;border-radius:10px;border:1px solid #1a3050;display:block;`;
+      previewWrap.appendChild(previewImg);
+
+      // ── Direct Link row ───────────────────────────────────
+      const linkSection = div(`padding:14px 20px 0;`);
+      const linkLabel = div(`font-size:11px;color:#3a5a79;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;`);
+      linkLabel.textContent = "Direct Link";
+      const linkRow = div(`display:flex;gap:8px;`);
+
+      const linkInput = document.createElement("input");
+      linkInput.readOnly = true;
+      linkInput.value = directLink;
+      linkInput.style.cssText = `
+        flex:1;background:#080f17;border:1px solid #1a3050;border-radius:8px;
+        padding:10px 14px;font-size:13px;color:#6a8faa;font-family:inherit;outline:none;
+        min-width:0;
       `;
-      btn.innerHTML = `${icon} ${label}`;
-      btn.onmouseenter = () => btn.style.opacity = "0.85";
-      btn.onmouseleave = () => btn.style.opacity = "1";
-      btn.onclick = action;
-      return btn;
-    };
 
-    // ── Download button ───────────────────────────────────
-    btnRow.appendChild(makeBtn("Download", "📥", "#1e3a4a", () => {
-      const a = document.createElement("a");
-      a.href = imageUrl;
-      a.download = "trade-chart.jpg";
-      a.click();
-      this.#showToast("📥 Downloaded!");
-    }));
+      const copyLinkBtn = btn(`
+        padding:10px 18px;border-radius:8px;border:none;
+        background:#0ea5e9;color:#fff;font-size:13px;font-weight:600;
+        display:flex;align-items:center;gap:6px;white-space:nowrap;transition:background 0.15s;
+      `);
+      copyLinkBtn.className = "te-copy-btn";
+      copyLinkBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copy Link`;
+      copyLinkBtn.onclick = () => {
+        navigator.clipboard.writeText(`https://${directLink}`).catch(() => { });
+        showToast("Link copied!");
+      };
 
-    // ── Copy to clipboard button ──────────────────────────
-    btnRow.appendChild(makeBtn("Copy Image", "📋", "#1e3a2f", async () => {
-      try {
-        await navigator.clipboard.write([
-          new ClipboardItem({ "image/png": blob })
-        ]);
-        this.#showToast("📋 Copied! Paste into Twitter, Discord, anywhere.");
-      } catch {
-        this.#showToast("❌ Clipboard not supported in this browser");
+      const dlBtn = btn(`
+        padding:10px 16px;border-radius:8px;
+        border:1px solid #1a3050;background:#0a1828;
+        color:#a0bdd8;font-size:13px;font-weight:500;
+        display:flex;align-items:center;gap:6px;white-space:nowrap;transition:all 0.15s;
+      `);
+      dlBtn.className = "te-dl-btn";
+      dlBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download PNG`;
+      dlBtn.onclick = () => {
+        const a = document.createElement("a");
+        a.href = wmDataUrl;
+        a.download = `tradeye-${Date.now()}.png`;
+        a.click();
+        showToast("Downloaded!");
+      };
+
+      linkRow.appendChild(linkInput);
+      linkRow.appendChild(copyLinkBtn);
+      linkRow.appendChild(dlBtn);
+      linkSection.appendChild(linkLabel);
+      linkSection.appendChild(linkRow);
+
+      // ── Caption box ───────────────────────────────────────
+      const captionSection = div(`padding:14px 20px 0;`);
+      const captionLabel = div(`font-size:11px;color:#3a5a79;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;`);
+      captionLabel.textContent = "Caption";
+      const captionBox = div(`
+        background:#080f17;border:1px solid #1a3050;border-radius:10px;
+        padding:12px 14px;font-size:13px;color:#a0bdd8;line-height:1.65;
+        white-space:pre-line;position:relative;
+      `);
+      captionBox.textContent = captionText;
+
+      // Copy caption button inside box
+      const copyCaptionBtn = btn(`
+        position:absolute;top:10px;right:10px;
+        background:transparent;border:1px solid #1a3050;border-radius:6px;
+        padding:4px 8px;color:#3a5a79;font-size:11px;
+        display:flex;align-items:center;gap:4px;transition:all 0.15s;
+      `);
+      copyCaptionBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`;
+      copyCaptionBtn.onmouseenter = () => { copyCaptionBtn.style.background = "#1a3050"; copyCaptionBtn.style.color = "#e2f0ff"; };
+      copyCaptionBtn.onmouseleave = () => { copyCaptionBtn.style.background = "transparent"; copyCaptionBtn.style.color = "#3a5a79"; };
+      copyCaptionBtn.onclick = () => {
+        navigator.clipboard.writeText(captionText).catch(() => { });
+        showToast("Caption copied!");
+      };
+      captionBox.style.position = "relative";
+      captionBox.appendChild(copyCaptionBtn);
+      captionSection.appendChild(captionLabel);
+      captionSection.appendChild(captionBox);
+
+      // ── Share On (icon circles) ───────────────────────────
+      const shareSection = div(`padding:16px 20px 20px;`);
+      const shareLabel2 = div(`font-size:11px;color:#3a5a79;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:14px;text-align:center;`);
+      shareLabel2.textContent = "Share On";
+      const iconRow = div(`display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;`);
+
+      const makeSocialBtn = (svgIcon, label, action) => {
+        const b = btn(`
+          width:48px;height:48px;border-radius:50%;
+          border:1px solid #1a3050;background:#0a1828;
+          display:flex;align-items:center;justify-content:center;
+          transition:all 0.15s;color:#7a9bba;
+        `);
+        b.className = "te-social-btn";
+        b.title = label;
+        b.innerHTML = svgIcon;
+        b.onclick = action;
+        return b;
+      };
+
+      const socials = [
+        {
+          label: "Instagram",
+          icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>`,
+          action: () => {
+            wmBlob && navigator.clipboard.write([new ClipboardItem({ "image/png": wmBlob })]).catch(() => { });
+            showToast("Image copied — paste into Instagram!");
+          },
+        },
+        {
+          label: "X / Twitter",
+          icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.845L1.254 2.25H8.08l4.261 5.632 5.903-5.632Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
+          action: () => window.open(`https://twitter.com/intent/tweet?text=${encodedCap}&url=${encodedUrl}`, "_blank", "noopener"),
+        },
+        {
+          label: "Discord",
+          icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.098.248-.198.373-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>`,
+          action: () => {
+            wmBlob && navigator.clipboard.write([new ClipboardItem({ "image/png": wmBlob })]).catch(() => { });
+            showToast("Copied — paste into Discord!");
+          },
+        },
+        {
+          label: "Telegram",
+          icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>`,
+          action: () => window.open(`https://t.me/share/url?url=${encodedUrl}&text=${encodedCap}`, "_blank", "noopener"),
+        },
+        {
+          label: "WhatsApp",
+          icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.124.558 4.121 1.535 5.856L.057 23.04c-.07.304.206.58.51.51l5.184-1.478A11.95 11.95 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.96 0-3.8-.527-5.382-1.442l-.386-.228-4.003 1.142 1.142-4.003-.228-.386A9.951 9.951 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>`,
+          action: () => window.open(`https://wa.me/?text=${encodedCap}%20${encodedUrl}`, "_blank", "noopener"),
+        },
+      ];
+
+      // Native mobile share as extra circle
+      const mobileFile = new File([wmBlob], "tradeye-trade.png", { type: "image/png" });
+      if (/iPhone|iPad|Android/i.test(navigator.userAgent) && navigator.canShare?.({ files: [mobileFile] })) {
+        socials.unshift({
+          label: "Share",
+          icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
+          action: async () => {
+            try { await navigator.share({ title: "My Trade on Tradeye", text: "📈 Trade captured & analysed on tradeye.in", files: [mobileFile] }); } catch { }
+          },
+        });
       }
-    }));
 
-    // ── Native share (mobile only) ────────────────────────
-    const file = new File([blob], "trade-chart.png", { type: "image/png" });
-    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
-    if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
-      btnRow.appendChild(makeBtn("Share", "🔗", "#1a2a4a", async () => {
-        try {
-          await navigator.share({
-            title: "My Trade",
-            text: "Check out my trade! 📈",
-            files: [file]
-          });
-        } catch (err) {
-          console.error("Share failed:", err);
-        }
-      }));
-    }
+      socials.forEach(({ icon, label, action }) => {
+        iconRow.appendChild(makeSocialBtn(icon, label, action));
+      });
 
-    // ── Assemble ──────────────────────────────────────────
-    modal.appendChild(header);
-    modal.appendChild(img);
-    modal.appendChild(btnRow);
-    backdrop.appendChild(modal);
-    document.body.appendChild(backdrop);
+      shareSection.appendChild(shareLabel2);
+      shareSection.appendChild(iconRow);
 
-    // ── Close handlers ────────────────────────────────────
-    const close = () => {
-      backdrop.remove();
-      URL.revokeObjectURL(imageUrl);
-    };
+      // ── Toast ─────────────────────────────────────────────
+      const toast = div(`
+        margin:0 20px 16px;background:rgba(34,211,238,0.08);
+        border:1px solid rgba(34,211,238,0.2);border-radius:8px;
+        padding:8px 12px;font-size:12px;color:#22d3ee;
+        align-items:center;gap:6px;display:none;
+      `);
+      toast.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span id="te-toast-msg"></span>`;
 
-    const closeBtn = document.getElementById("share-modal-close");
-    closeBtn.onmouseenter = () => closeBtn.style.color = "#fff";
-    closeBtn.onmouseleave = () => closeBtn.style.color = "#888";
-    closeBtn.onclick = close;
-    backdrop.onclick = (e) => { if (e.target === backdrop) close(); };
+      let toastTimer;
+      const showToast = (msg) => {
+        document.getElementById("te-toast-msg").textContent = msg;
+        toast.style.display = "flex";
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { toast.style.display = "none"; }, 2500);
+      };
+
+      // ── Assemble ──────────────────────────────────────────
+      modal.appendChild(header);
+      modal.appendChild(previewWrap);
+      modal.appendChild(linkSection);
+      modal.appendChild(captionSection);
+      modal.appendChild(shareSection);
+      modal.appendChild(toast);
+      backdrop.appendChild(modal);
+      document.body.appendChild(backdrop);
+
+      // ── Close ─────────────────────────────────────────────
+      const close = () => { backdrop.remove(); URL.revokeObjectURL(imageUrl); };
+      closeBtn.onclick = close;
+      backdrop.onclick = (e) => { if (e.target === backdrop) close(); };
+    });
   }
 
   #showToast(message) {
