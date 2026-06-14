@@ -125,26 +125,52 @@ export const modifyAnnotationEnd = (group, colors, isMobile = false) => {
     .style("cursor", "pointer")
     .text("Notes ✏️")
     .on("click", function (event, d) {
-      console.log("Note data:", d);
-
       const noteGroup = d3.select(this.closest(".annotation-note-content"));
       noteGroup.select(".note-textarea").remove();
 
       const isMobile = window.innerWidth <= 600;
-      const foX = 50;
-      const foY = 50;
-      const foWidth = isMobile ? 200 : 400;
-      const foHeight = isMobile ? 200 : 300;
+      const foWidth = isMobile ? 220 : 320;
+      const foHeight = isMobile ? 240 : 300;
 
       const fo = noteGroup
         .append("foreignObject")
         .attr("class", "note-textarea")
-        .attr("x", foX)
-        .attr("y", foY)
+        .attr("x", 50)
+        .attr("y", 50)
         .attr("width", foWidth)
         .attr("height", foHeight);
 
       const container = document.createElement("div");
+      container.style.cssText = `
+        all: initial;
+        display: block;
+        width: 100%;
+        height: 100%;
+        color: #c9d1d9;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        box-sizing: border-box;
+      `;
+
+      // ── Inject Tailwind stylesheet into the foreignObject so
+      //    classes actually work inside SVG context ─────────────
+      const styleLink = document.createElement("link");
+      styleLink.rel = "stylesheet";
+      // grab the existing Tailwind stylesheet href from the page
+      const tailwindHref = Array.from(document.styleSheets)
+        .find(s => {
+          try { return s.cssRules?.length > 0; } catch { return false; }
+        })?.href;
+
+      if (tailwindHref) {
+        styleLink.href = tailwindHref;
+        container.appendChild(styleLink);
+      } else {
+        // fallback: clone ALL style/link tags into the foreignObject
+        document.querySelectorAll('style, link[rel="stylesheet"]').forEach(el => {
+          container.appendChild(el.cloneNode(true));
+        });
+      }
+
       fo.node().appendChild(container);
 
       const root = ReactDOM.createRoot(container);
@@ -152,20 +178,16 @@ export const modifyAnnotationEnd = (group, colors, isMobile = false) => {
         <NoteTextarea
           data={d}
           onClose={() => fo.remove()}
-          x={foX}
-          y={foY}
           width={foWidth}
           height={foHeight}
-        />,
+        />
       );
 
       const foNode = fo.node();
-      ["wheel", "touchmove", "pointerdown"].forEach((evt) =>
-        foNode.addEventListener(evt, (e) => e.stopPropagation(), {
-          passive: true,
-        }),
+      ["wheel", "touchmove", "pointerdown"].forEach(evt =>
+        foNode.addEventListener(evt, e => e.stopPropagation(), { passive: true })
       );
-    });
+    })
 
   // Style the annotation handle and add icon
   d3.selectAll(".annotation .annotation-note .handle")

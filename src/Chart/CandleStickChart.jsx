@@ -7,7 +7,6 @@ import {
   annotationCustomType,
   annotationCalloutRect
 } from 'd3-svg-annotation';
-import html2canvas from 'html2canvas';
 import { toBlob } from 'html-to-image';
 import axios from 'axios';
 import ENV from "../config"; // import your config file
@@ -255,20 +254,55 @@ class CandleStickChart {
     const card = toolbar?.closest(".stockChartCard");
     if (!card) return;
 
-    // ── Show loader (same as your original) ──────────────────
+    // ── 1. Flatten all React foreignObjects to static HTML ──────────
+    const foreignObjects = [...card.querySelectorAll("foreignObject.note-textarea")];
+    const snapshots = foreignObjects.map((fo) => {
+      // Grab the rendered inner HTML from the React container div
+      const container = fo.querySelector("div");
+      const staticHTML = container ? container.innerHTML : "";
+
+      // Clone the fo node to restore later
+      const clone = fo.cloneNode(true);
+
+      // Replace the React root with a plain div holding static HTML
+      if (container) {
+        // Detach React root to prevent "already has a root" warnings
+        // (We'll re-mount after capture, so we snapshot the HTML first)
+        const staticDiv = document.createElement("div");
+        staticDiv.innerHTML = staticHTML;
+        // Copy inline styles for visual fidelity
+        staticDiv.style.cssText = container.style.cssText;
+        fo.innerHTML = "";
+        fo.appendChild(staticDiv);
+      }
+
+      return { fo, clone };
+    });
+
+    // Force-inline critical styles on the foreignObject div
+    foreignObjects.forEach((fo) => {
+      const div = fo.querySelector("div");
+      if (div) {
+        const computed = window.getComputedStyle(div);
+        div.style.background = computed.background;
+        div.style.color = computed.color;
+        div.style.fontFamily = computed.fontFamily;
+        div.style.fontSize = computed.fontSize;
+        div.style.padding = computed.padding;
+        div.style.borderRadius = computed.borderRadius;
+        div.style.border = computed.border;
+      }
+    });
+
+    // ── 2. Show loader ───────────────────────────────────────────────
     const loader = document.createElement("div");
     loader.id = "screenshot-loader";
     loader.style.cssText = `
-      position: fixed;
-      inset: 0;
-      z-index: 999999;
+      position: fixed; inset: 0; z-index: 999999;
       background: rgba(0,0,0,0.7);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
     `;
     loader.innerHTML = `
       <style>
@@ -277,18 +311,12 @@ class CandleStickChart {
         #screenshot-loader .spinner {
           width: 44px; height: 44px;
           border: 3px solid rgba(255,255,255,0.1);
-          border-top-color: #22d3ee;
-          border-radius: 50%;
-          animation: spin 0.7s linear infinite;
-          margin-bottom: 16px;
+          border-top-color: #22d3ee; border-radius: 50%;
+          animation: spin 0.7s linear infinite; margin-bottom: 16px;
         }
         #screenshot-loader .label {
-          color: #fff;
-          font-size: 14px;
-          font-family: sans-serif;
-          font-weight: 500;
-          animation: pulse 1.2s ease infinite;
-          letter-spacing: 0.3px;
+          color: #fff; font-size: 14px; font-family: sans-serif;
+          font-weight: 500; animation: pulse 1.2s ease infinite; letter-spacing: 0.3px;
         }
       </style>
       <div class="spinner"></div>
@@ -315,11 +343,17 @@ class CandleStickChart {
       console.error("Capture failed:", err);
       this.#showToast("❌ Capture failed");
     } finally {
+      // ── 3. Restore React foreignObjects ─────────────────────────
+      snapshots.forEach(({ fo, clone }) => {
+        fo.innerHTML = clone.innerHTML;
+      });
+
       if (toolbar) toolbar.style.visibility = "visible";
       if (dropdown) dropdown.style.visibility = "visible";
       loader.remove();
     }
   }
+
   #showShareModal(imageUrl, blob) {
 
     // ── Inject styles once ────────────────────────────────
@@ -355,7 +389,7 @@ class CandleStickChart {
         const padding = Math.max(20, c.width * 0.02);
         const fontSize = Math.max(16, c.width * 0.025);
         const text = "tradeye.in";
-        
+
         ctx.font = `600 ${fontSize}px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif`;
         ctx.fillStyle = "rgba(255,255,255,0.35)";
         ctx.textAlign = "right";
@@ -363,7 +397,7 @@ class CandleStickChart {
 
         const x = c.width - padding;
         const y = c.height - padding;
-        
+
         ctx.fillText(text, x, y);
 
         resolve(c.toDataURL("image/png"));
