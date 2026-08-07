@@ -6,6 +6,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { Link } from "react-router-dom"
+import PrecisionGridBackground from './TopologyBackground.jsx';
 
 const HowItWorks = () => {
   const steps = [
@@ -37,6 +38,7 @@ const HowItWorks = () => {
 
   return (
     <section className="bg-[#020617] py-24 relative overflow-hidden border-t border-white/5">
+      <PrecisionGridBackground />
       {/* Decorative background elements */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-900/10 blur-[100px] rounded-full pointer-events-none"></div>
 

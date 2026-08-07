@@ -5,7 +5,9 @@ import OneTapLogin from "../Login/oneTapLogin";
 import RecentVisualizations from "./RecentVisualizations";
 import { getToken } from "../utils/auth";
 import Hero from "./Hero";
+import PrecisionGridBackground from "./TopologyBackground.jsx";
 import HowItWorks from "./HowItWorks";
+import ProductDemo from "./ProductDemo.jsx";
 
 const LandingPage = () => {
 
@@ -16,6 +18,7 @@ const LandingPage = () => {
     <div className="bg-[#020617] min-h-screen">
         <Navbar isLandingPage={true} />
         <Hero isLoggedIn={isLoggedIn} />
+        <ProductDemo videoSrc="videos/demo_compressed.mp4" posterSrc="images/product_demo.png" />
         <HowItWorks />
       {isLoggedIn ? (
         <RecentVisualizations />

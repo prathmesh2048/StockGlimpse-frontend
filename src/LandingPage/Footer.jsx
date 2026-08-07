@@ -3,7 +3,7 @@ import './Footer.css';
 
 const Footer = () => (
   <footer className="footer">
-    <p>© 2025 TradeVisualizer. All rights reserved.</p>
+    <p>© 2026 Tradeye. All rights reserved.</p>
   </footer>
 );
 
