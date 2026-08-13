@@ -49,7 +49,10 @@ const Hero = ({ isLoggedIn }) => {
 
                         {/* Subheadline */}
                         <p className="text-lg md:text-xl text-slate-400 mb-10 max-w-md font-medium">
-                            Your broker tells you what you traded. Tradeye shows you how you traded.
+                            Your broker tells you what you traded, Tradeye shows you how you traded in&nbsp;
+                            <span className="bg-clip-text text-[#F2F3F5]">
+                                seconds.
+                            </span>
                         </p>
 
                         {/* CTA Buttons */}
