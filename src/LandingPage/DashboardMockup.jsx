@@ -338,16 +338,18 @@ const DashboardMockup = () => {
           })}
         </div>
 
-        {/* Card 3: Trade Summary */}
+        {/* Card 3: Trade Note */}
         <div className="bg-[#111726] rounded-xl p-5 border border-slate-800/80 flex flex-col justify-between min-h-[160px]">
           <div>
-            <h4 className="text-[11px] font-bold text-white mb-2 tracking-wider">TRADE SUMMARY</h4>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              Price successfully bounced from key S1 support area with rising RSI momentum. Candlestick patterns suggest strong accumulation.
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-[11px] font-bold text-slate-300 tracking-wider uppercase">MY SWING TRADE</h4>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed font-normal">
+              Strong buyer support near 22,200. Clear upward trend with target set at 22,800 over the next few sessions.
             </p>
           </div>
-          <button className="text-[#0052FF] text-[11px] font-semibold flex items-center gap-1 hover:text-blue-400 transition-colors w-max mt-3">
-            View Trade Note <ArrowRight className="w-3.5 h-3.5" />
+          <button className="text-[#0052FF] text-[11px] font-semibold flex items-center gap-1 hover:text-blue-400 transition-colors w-max mt-3 group">
+            View More <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
           </button>
         </div>
 

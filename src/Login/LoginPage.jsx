@@ -7,6 +7,7 @@ import { setToken } from '../utils/auth';
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import LoginMessageToast from "./LoginMessageToast";
+import Navbar from "../Navbar/Navbar";
 
 const LoginPage = () => {
 
@@ -62,6 +63,8 @@ const LoginPage = () => {
 
 
     return (
+        <>
+        <Navbar />
         <div className="login-page">
             {showToast && (
                 <LoginMessageToast
@@ -126,6 +129,7 @@ const LoginPage = () => {
                 </p>
             </div>
         </div>
+        </>
     );
 };
 

@@ -37,8 +37,7 @@ const Hero = ({ isLoggedIn }) => {
                         </div>
 
                         {/* Headline */}
-                        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[80px] font-bold tracking-tight leading-[1.1] mb-6">
-                            <div className="text-white">See Trades</div>
+                        <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[80px] font-bold tracking-tight leading-[1.1] mb-6">                            <div className="text-white">See Trades</div>
 
                             <div className="whitespace-normal lg:whitespace-nowrap">
                                 <span className="text-[#0052FF]">Not </span>
@@ -65,7 +64,7 @@ const Hero = ({ isLoggedIn }) => {
                                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                     </div>
                                     <span className="mt-0.9 text-[10px] font-normal text-blue-100">
-                                        100% Free • No Card Required
+                                        10 Free Trades • No Card Needed
                                     </span>
                                 </div>
                             </button>

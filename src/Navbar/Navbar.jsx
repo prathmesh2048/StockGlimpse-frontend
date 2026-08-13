@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Menu, X, ArrowRight } from "lucide-react";
 import useUser from "../hooks/useUser";
 import { clearToken } from "../utils/auth";
 
 const Navbar = ({ isLandingPage = false }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading } = useUser();
 
   const [open, setOpen] = useState(false);
@@ -21,6 +22,24 @@ const Navbar = ({ isLandingPage = false }) => {
   useEffect(() => {
     setLoggedIn(!!user);
   }, [user]);
+
+  // Whenever we land on "/" with a hash in the URL, scroll to that section.
+  // This covers both cases: clicking the link while already on the homepage
+  // (hash changes, pathname doesn't) and navigating from another page
+  // (pathname changes to "/", hash arrives with it).
+  useEffect(() => {
+    if (location.pathname !== "/" || !location.hash) return;
+
+    const id = location.hash.slice(1); // "#contact" -> "contact"
+    // Small delay lets the homepage's sections actually mount/render
+    // before we try to scroll to one of them, especially right after
+    // navigating in from a different route.
+    const timer = setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [location]);
 
   if (loading) return null;
 
@@ -38,10 +57,10 @@ const Navbar = ({ isLandingPage = false }) => {
 
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all ${!isLandingPage
-            ? "bg-[#020617] border-b border-white/10"
-            : scrolled
-              ? "bg-[#020617]/90 backdrop-blur-md border-b border-white/10"
-              : "bg-transparent"
+          ? "bg-[#020617] border-b border-white/10"
+          : scrolled
+            ? "bg-[#020617]/90 backdrop-blur-md border-b border-white/10"
+            : "bg-transparent"
           }`}
       >
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
@@ -63,6 +82,7 @@ const Navbar = ({ isLandingPage = false }) => {
             <Link to="/#how-it-works" className={linkClass}>How It Works</Link>
             <Link to="/pricing" className={linkClass}>Pricing</Link>
             <Link to="/select-broker" className={linkClass}>Analyze</Link>
+            <Link to="/#contact" className={linkClass}>Contact</Link>
             {!loggedIn ? (
               <Link to="/login" className={linkClass}>Login</Link>
             ) : (
@@ -95,6 +115,7 @@ const Navbar = ({ isLandingPage = false }) => {
             <Link to="/#how-it-works" className={linkClass} onClick={() => setOpen(false)}>How It Works</Link>
             <Link to="/pricing" className={linkClass} onClick={() => setOpen(false)}>Pricing</Link>
             <Link to="/select-broker" className={linkClass} onClick={() => setOpen(false)}>Analyze</Link>
+            <Link to="/#contact" className={linkClass} onClick={() => setOpen(false)}>Contact</Link>
 
             {!loggedIn ? (
               <Link to="/login" className={linkClass} onClick={() => setOpen(false)}>Login</Link>

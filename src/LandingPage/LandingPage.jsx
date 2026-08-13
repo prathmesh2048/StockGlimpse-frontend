@@ -8,6 +8,9 @@ import Hero from "./Hero";
 import PrecisionGridBackground from "./TopologyBackground.jsx";
 import HowItWorks from "./HowItWorks";
 import ProductDemo from "./ProductDemo.jsx";
+import SecuritySection from "./SecuritySection.jsx";
+import FAQSection from "./FAQsection.jsx";
+import ContactSection from "./ContactSection.jsx";
 
 const LandingPage = () => {
 
@@ -16,15 +19,18 @@ const LandingPage = () => {
 
   return (
     <div className="bg-[#020617] min-h-screen">
-        <Navbar isLandingPage={true} />
-        <Hero isLoggedIn={isLoggedIn} />
-        <ProductDemo videoSrc="videos/demo_compressed.mp4" posterSrc="images/product_demo.png" />
-        <HowItWorks />
+      <Navbar isLandingPage={true} />
+      <Hero isLoggedIn={isLoggedIn} />
+      <ProductDemo videoSrc="videos/demo_compressed.mp4" posterSrc="images/product_demo.png" />
+      <SecuritySection />
+      <HowItWorks />
+      <FAQSection />
       {isLoggedIn ? (
         <RecentVisualizations />
       ) : (
         <OneTapLogin onLoginSuccess={() => setIsLoggedIn(true)} />
       )}
+      <ContactSection />
       <Footer />
     </div>
   );

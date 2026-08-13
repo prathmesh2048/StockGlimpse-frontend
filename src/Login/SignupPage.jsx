@@ -4,6 +4,7 @@ import "./LoginPage.css";
 import { setToken } from '../utils/auth';
 import LoginButton from "./LoginButton";
 import ENV from "../config";
+import Navbar from "../Navbar/Navbar";
 
 const SignupPage = () => {
   const navigate = useNavigate();
@@ -49,83 +50,86 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="login-page">
-      <div className="login-container">
-        <h2 className="login-title">Create Your Account</h2>
-        <form onSubmit={handleSignup} className="login-form">
-          <div className="input-group">
-            <label htmlFor="firstName">First Name</label>
-            <input
-              type="text"
-              id="firstName"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="input-group">
-            <label htmlFor="lastName">Last Name</label>
-            <input
-              type="text"
-              id="lastName"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="input-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="input-group">
-            <label htmlFor="password">Password</label>
-            <div className="password-container">
+    <>
+      <Navbar />
+      <div className="login-page">
+        <div className="login-container">
+          <h2 className="login-title">Create Your Account</h2>
+          <form onSubmit={handleSignup} className="login-form">
+            <div className="input-group">
+              <label htmlFor="firstName">First Name</label>
               <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                name="password"
-                value={formData.password}
+                type="text"
+                id="firstName"
+                name="firstName"
+                value={formData.firstName}
                 onChange={handleChange}
                 required
               />
-              <span
-                className="eye-icon"
-                onClick={() => setShowPassword(!showPassword)} // Toggle password visibility
-                style={{ cursor: "pointer" }}
-              >
-                {showPassword ? (
-                  <img class="eye-icon" src={process.env.PUBLIC_URL + "/images/open.png"} alt="eye open" /> // Open eye icon
-                ) : (
-                  <img class="eye-icon"src={process.env.PUBLIC_URL + "/images/close.png"} alt="eye closed" /> // Closed eye icon
-                )}
-              </span>
             </div>
-          </div>
-          <button type="submit" className="login-button">
-            Sign Up
-          </button>
-          <div style={{ display: "flex", justifyContent: "center", padding: "10px" }}>
-            <LoginButton />
-          </div>
-        </form>
-        {errorMessage && <p className="error-message">{errorMessage}</p>}
-        <p className="login-link">
-          Already have an account?{" "}
-          <Link to="/login" className="login-link-text">
-            Login here
-          </Link>
-        </p>
+            <div className="input-group">
+              <label htmlFor="lastName">Last Name</label>
+              <input
+                type="text"
+                id="lastName"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="input-group">
+              <label htmlFor="email">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div className="input-group">
+              <label htmlFor="password">Password</label>
+              <div className="password-container">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                />
+                <span
+                  className="eye-icon"
+                  onClick={() => setShowPassword(!showPassword)} // Toggle password visibility
+                  style={{ cursor: "pointer" }}
+                >
+                  {showPassword ? (
+                    <img class="eye-icon" src={process.env.PUBLIC_URL + "/images/open.png"} alt="eye open" /> // Open eye icon
+                  ) : (
+                    <img class="eye-icon" src={process.env.PUBLIC_URL + "/images/close.png"} alt="eye closed" /> // Closed eye icon
+                  )}
+                </span>
+              </div>
+            </div>
+            <button type="submit" className="login-button">
+              Sign Up
+            </button>
+            <div style={{ display: "flex", justifyContent: "center", padding: "10px" }}>
+              <LoginButton />
+            </div>
+          </form>
+          {errorMessage && <p className="error-message">{errorMessage}</p>}
+          <p className="login-link">
+            Already have an account?{" "}
+            <Link to="/login" className="login-link-text">
+              Login here
+            </Link>
+          </p>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
