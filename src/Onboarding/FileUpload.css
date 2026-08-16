@@ -455,3 +455,43 @@
         margin-left: 0;
     }
 }
+
+.open-broker-btn {
+    border: 1.5px solid;
+    background: transparent;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  
+  .open-broker-btn:hover {
+    transform: translateY(-1px);
+    background: color-mix(in srgb, var(--glow-color) 10%, transparent);
+  }
+  
+  .open-broker-btn:active {
+    transform: translateY(0);
+  }
+  
+  .open-broker-btn--pulse {
+    animation: broker-btn-glow 2.2s ease-in-out infinite;
+  }
+  
+  @keyframes broker-btn-glow {
+    0%, 100% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--glow-color) 35%, transparent);
+    }
+    50% {
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--glow-color) 0%, transparent);
+    }
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    .open-broker-btn--pulse {
+      animation: none;
+    }
+  }

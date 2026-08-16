@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import './StockChartCard.css';
 import StockCard from './StockCard';
 import ScorePanel from './ScorePanel';
@@ -13,14 +14,21 @@ const StockChartCard = ({
 }) => {
 
     const { user, loading } = useUser();
-    console.log("user in StockChartCard:", user);
+    const scorePanelRef = useRef(null);
+
+    const scrollToScore = () => {
+        scorePanelRef.current?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    };
 
     return (
         <div className="stockChartCard">
 
             {/* Header overlay */}
             <div className="stockChartHeader">
-                <StockCard stock={stock} />
+                <StockCard stock={stock} onScoreClick={scrollToScore} />
             </div>
 
             {/* Chart area */}
@@ -30,12 +38,14 @@ const StockChartCard = ({
 
             {/* Score Panel */}
             {!loading && (
-                <ScorePanel
-                    isPaid={user?.has_unlimited_coins || isDemo}
-                    isDemo={isDemo}
-                    trades={annotations}
-                    priceData={priceData}
-                />
+                <div ref={scorePanelRef}>
+                    <ScorePanel
+                        isPaid={user?.has_unlimited_coins || isDemo}
+                        isDemo={isDemo}
+                        trades={annotations}
+                        priceData={priceData}
+                    />
+                </div>
             )}
 
         </div>

@@ -4,6 +4,25 @@ import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import ENV from '../config'
 
+// ─── Mobile detection ──────────────────────────────────────────────────────────
+const isMobileDevice = () =>
+  typeof navigator !== 'undefined' &&
+  /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+
+// ─── Broker deep links ─────────────────────────────────────────────────────────
+// Zerodha Console is web-only — same link works on desktop and mobile browsers.
+// Groww: send mobile users into the app (their own official app-open link),
+//        desktop users to the website — no confirmed direct "Reports" URL for
+//        either, so this is best-effort, not a pre-filled deep link.
+// AngelOne: no public app deep-link scheme exists, so always route to the
+//           website report page — reliable on both desktop and mobile browsers.
+const BROKER_LINKS = {
+  zerodha: () => 'https://console.zerodha.com/reports/tradebook',
+  groww: (mobile) => (mobile ? 'https://app.groww.in/v3cO/4a6424fe' : 'https://groww.in'),
+  angleone: () => 'https://www.angelone.in/trade/reports/trades-charges',
+  angelone: () => 'https://www.angelone.in/trade/reports/trades-charges',
+}
+
 // ─── Broker config ─────────────────────────────────────────────────────────────
 const BROKER_INSTRUCTIONS = {
   groww: {
@@ -113,6 +132,9 @@ const StepText = ({ text }) => {
 const FileUpload = ({ selected_broker = 'zerodha', onDataUpload }) => {
   const brokerKey = selected_broker?.toLowerCase().replace(/\s+/g, '')
   const broker = BROKER_INSTRUCTIONS[brokerKey] || null
+  // AngelOne has no reliable in-app deep link, so default to the Website tab
+  // (index 0) on every device — it's the tab most likely to land the user
+  // exactly on the right report page instead of just opening the app cold.
   const [activeTab, setActiveTab] = useState(0)
 
   const formatFileSize = (bytes) => {
@@ -216,6 +238,12 @@ const FileUpload = ({ selected_broker = 'zerodha', onDataUpload }) => {
     ? broker.tabs[activeTab].steps
     : broker?.steps
 
+  const handleOpenBroker = () => {
+    const getLink = BROKER_LINKS[brokerKey]
+    if (!getLink) return
+    window.open(getLink(isMobileDevice()), '_blank', 'noopener,noreferrer')
+  }
+
   return (
     <div className="file-upload-container">
 
@@ -226,12 +254,25 @@ const FileUpload = ({ selected_broker = 'zerodha', onDataUpload }) => {
             <div className="broker-logo" style={{ background: broker.accentColor }}>
               {broker.logo}
             </div>
-            <div>
+            <div style={{ flex: 1 }}>
               <p className="instruction-title">
                 How to get your <strong>{broker.reportName}</strong> from {broker.name}
               </p>
               <p className="instruction-sub">Follow these steps, then upload the file below</p>
             </div>
+            {BROKER_LINKS[brokerKey] && (
+              <button
+                className="open-broker-btn open-broker-btn--pulse"
+                style={{
+                  borderColor: broker.accentColor,
+                  color: broker.accentColor,
+                  '--glow-color': broker.accentColor,
+                }}
+                onClick={handleOpenBroker}
+              >
+                Open {broker.name} →
+              </button>
+            )}
           </div>
 
           {broker.tabs && (

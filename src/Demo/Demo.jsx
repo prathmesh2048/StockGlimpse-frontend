@@ -57,7 +57,8 @@ export default function DemoChart() {
                     annotations,
                     DEMO_CHART_ID,
                     theme,
-                    false // isPaid — always false in demo
+                    false,
+                    true
                 );
             } else {
                 chartInstance.current.clear?.();
@@ -98,22 +99,28 @@ export default function DemoChart() {
             <div className="min-h-screen bg-[#060d14]">
 
                 {/* Demo banner */}
-                <div className="w-full bg-[#0d1b2a] border-b border-[#1e3048] px-6 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <span className="bg-[#3b82f6]/15 border border-[#3b82f6]/30 text-[#3b82f6] text-xs font-bold px-2.5 py-1 rounded-md">
-                            DEMO
-                        </span>
-                        <p className="text-[#5a7a9a] text-sm">
-                            You're viewing a demo chart with sample BEL trades —{" "}
-                            <span className="text-white font-medium">Upload your tradebook to see your own data</span>
-                        </p>
+                <div className="w-full bg-[#0d1b2a] border-b border-[#1e3048] px-4 sm:px-6 py-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-start sm:items-center gap-3">
+                            <span className="shrink-0 bg-[#3b82f6]/15 border border-[#3b82f6]/30 text-[#3b82f6] text-xs font-bold px-2.5 py-1 rounded-md">
+                                DEMO
+                            </span>
+
+                            <p className="text-[#5a7a9a] text-sm leading-5">
+                                You're viewing a demo chart with sample BEL trades —{" "}
+                                <span className="text-white font-medium">
+                                    Upload your tradebook to see your own data
+                                </span>
+                            </p>
+                        </div>
+
+                        <button
+                            onClick={() => window.location.assign("/signup")}
+                            className="w-full sm:w-auto shrink-0 bg-[#3b82f6] hover:bg-[#2563eb] text-white text-sm font-bold px-4 py-2.5 rounded-lg transition-colors"
+                        >
+                            Get Started Free
+                        </button>
                     </div>
-                    <button
-                        onClick={() => window.location.assign("/signup")}
-                        className="shrink-0 bg-[#3b82f6] hover:bg-[#2563eb] text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors"
-                    >
-                        Get Started Free
-                    </button>
                 </div>
 
                 {/* Chart — match exact structure from ChartDashboard */}

@@ -220,7 +220,7 @@ export const createToolsBtns = (opts) => {
   const id = opts?.id ?? this.id;
   const isPaid = opts?.isPaid ?? false;
   console.log("isPaid in createToolsBtns:", isPaid);
-  const premiumItems = ["ailevels", "candle-pattern"];
+  const premiumItems = [];
 
   const objectIDs =
     opts?.objectIDs ??
@@ -236,6 +236,8 @@ export const createToolsBtns = (opts) => {
   d3.select(`#${objectIDs.toolsBtnsContainer}`).remove();
 
   // ── Container ───────────────────────────────────────────────────────────
+  const isMobileToolbar = window.innerWidth <= 600;
+
   const container = d3
     .select(`#${id}`)
     .append("div")
@@ -243,10 +245,10 @@ export const createToolsBtns = (opts) => {
     .style("display", "flex")
     .style("align-items", "center")
     .style("justify-content", "flex-end")
-    .style("gap", "8px")
+    .style("gap", isMobileToolbar ? "6px" : "8px")
     .style("height", "44px")
     .style("pointer-events", "none")
-    .style("padding-right", "12px")
+    .style("padding-right", isMobileToolbar ? "4px" : "12px")
     .style("position", "relative");
 
   d3.select(`#${id}`).style("position", "relative");
@@ -304,7 +306,7 @@ export const createToolsBtns = (opts) => {
         <path d='m4 1v4h-4' transform='matrix(1 0 0 -1 0 6)'/>
       </g>
     </svg>`,
-    "Reset Zoom",
+    "Reset",
   );
 
   // ── Switch Chart Type ───────────────────────────────────────────────────
@@ -611,6 +613,16 @@ export const createToolsBtns = (opts) => {
     .style("border-top", "1px solid #1e3048")
     .style("border-bottom", "1px solid #1e3048")
     .style("padding", "2px 0");
+
+  document.getElementById(id)?.addEventListener("chart-reset", () => {
+    // Uncheck all EMA rows
+    [9, 21, 50, 200].forEach((period) => {
+      emaState[period] = false;
+      d3.select(`#ema-check-${period}`)
+        .style("background", "transparent")
+        .html("");
+    });
+  });
 
   [9, 21, 50, 200].forEach((period) => {
     const optRow = emaBody

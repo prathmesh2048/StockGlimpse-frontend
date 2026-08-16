@@ -83,10 +83,15 @@ const Navbar = ({ isLandingPage = false }) => {
             <Link to="/pricing" className={linkClass}>Pricing</Link>
             <Link to="/select-broker" className={linkClass}>Analyze</Link>
             <Link to="/#contact" className={linkClass}>Contact</Link>
+
             {!loggedIn ? (
               <Link to="/login" className={linkClass}>Login</Link>
             ) : (
-              <button onClick={handleSignout} className={linkClass}>Logout</button>
+              <>
+                <Link to="/history" className={linkClass}>History</Link>
+                <Link to="/analytics" className={linkClass}>Analytics</Link>
+                <button onClick={handleSignout} className={linkClass}>Logout</button>
+              </>
             )}
           </div>
 
