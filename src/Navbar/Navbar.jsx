@@ -81,9 +81,8 @@ const Navbar = ({ isLandingPage = false }) => {
           <div className="hidden md:flex items-center gap-8">
             <Link to="/#how-it-works" className={linkClass}>How It Works</Link>
             <Link to="/pricing" className={linkClass}>Pricing</Link>
-            <Link to="/select-broker" className={linkClass}>Analyze</Link>
+            <Link to={isLoggedIn ? "/select-broker" : "/login"} className={linkClass}>Analyze</Link>
             <Link to="/#contact" className={linkClass}>Contact</Link>
-
             {!loggedIn ? (
               <Link to="/login" className={linkClass}>Login</Link>
             ) : (
