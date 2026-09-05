@@ -19,7 +19,7 @@ const LandingPage = () => {
 
   return (
     <div className="bg-[#020617] min-h-screen">
-      <Navbar isLandingPage={true} />
+      <Navbar isLoggedIn={isLoggedIn} isLandingPage={true} />
       <Hero isLoggedIn={isLoggedIn} />
       <ProductDemo videoSrc="videos/demo_compressed.mp4" posterSrc="images/product_demo.png" />
       <SecuritySection />

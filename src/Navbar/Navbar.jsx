@@ -4,7 +4,7 @@ import { Menu, X, ArrowRight } from "lucide-react";
 import useUser from "../hooks/useUser";
 import { clearToken } from "../utils/auth";
 
-const Navbar = ({ isLandingPage = false }) => {
+const Navbar = ({ isLoggedIn = false, isLandingPage = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading } = useUser();
