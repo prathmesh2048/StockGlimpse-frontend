@@ -2557,67 +2557,6 @@ function ConvictionPenaltyCard({ data }) {
         </div>
     );
 }
-// ---------------------------------------------------------------------------
-// Recent Intelligence Feed
-// ---------------------------------------------------------------------------
-
-const FEED_ICON = {
-    trend: <LineChartIcon size={15} />,
-    warning: <AlertTriangle size={15} />,
-    trophy: <Trophy size={15} />,
-    bars: <BarChart3 size={15} />,
-};
-
-const FEED_ICON_STYLE = {
-    trend: "bg-blue-500/15 text-blue-400",
-    warning: "bg-rose-500/15 text-rose-400",
-    trophy: "bg-violet-500/15 text-violet-300",
-    bars: "bg-emerald-500/15 text-emerald-400",
-};
-
-function IntelligenceFeedCard({ feed }) {
-    return (
-        <Card
-            title="Recent Intelligence Feed"
-            subtitle=""
-            right={<span className="text-[12px] text-slate-500">Last 7 days</span>}
-        >
-            {/* Now full-width — content scrolls vertically inside a fixed-height
-          panel instead of growing the card indefinitely as the feed fills up. */}
-            <div className="flex max-h-[420px] flex-col divide-y divide-white/[0.05] overflow-y-auto pr-1">
-                {feed.map((item, i) => (
-                    <div key={i} className="flex items-start gap-3 py-3.5 first:pt-0 last:pb-0">
-                        <div
-                            className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${FEED_ICON_STYLE[item.icon]
-                                }`}
-                        >
-                            {FEED_ICON[item.icon]}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-                                <p className="text-[13.5px] font-medium text-slate-100">
-                                    {item.symbol}
-                                    <span className="ml-2 text-[11.5px] font-normal text-slate-500">
-                                        {item.date}
-                                    </span>
-                                </p>
-                                <span
-                                    className={`text-[13px] font-semibold tabular-nums ${item.pnl >= 0 ? "text-emerald-400" : "text-rose-400"
-                                        }`}
-                                >
-                                    {fmtRupee(item.pnl)}
-                                </span>
-                            </div>
-                            <p className="mt-1 text-[12.5px] leading-relaxed text-slate-400">
-                                {item.note}
-                            </p>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </Card>
-    );
-}
 
 // ---------------------------------------------------------------------------
 // Timeframe switch
@@ -2752,10 +2691,6 @@ export default function PulseDashboard({ data = DEFAULT_DATA }) {
                         </div>
                         <div className="lg:col-span-6">
                             <ConvictionPenaltyCard data={convictionPenalty} />
-                        </div>
-
-                        <div className="lg:col-span-12">
-                            <IntelligenceFeedCard feed={analyticsData.feed || data.feed} />
                         </div>
                     </div>
                 </div>
