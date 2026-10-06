@@ -95,7 +95,7 @@ const DEMO_SCORES = [
             momentum: { score: 12, max: 20, comment: "Momentum confirmed the short bias." },
             volume: { score: 9, max: 15, comment: "Participation was there but not decisive." },
             sr: { score: 19, max: 25, comment: "Entry came from a clear resistance rejection." },
-            candle: { score: 7, max: 10, comment: "Strong bearish candle — clear momentum at entry." },
+            volatility: { score: 7, max: 10, comment: "Strong bearish candle — clear momentum at entry." },
         },
     },
     {
@@ -155,7 +155,7 @@ const DEMO_SCORES = [
             momentum: { score: 17, max: 20, comment: "Strong impulse supported continuation." },
             volume: { score: 13, max: 15, comment: "Participation expanded on the move." },
             sr: { score: 21, max: 25, comment: "Entry cleared support with room to run." },
-            candle: { score: 9, max: 10, comment: "Bullish close showed clean acceptance." },
+            volatility: { score: 9, max: 10, comment: "Bullish close showed clean acceptance." },
         },
     },
     {
@@ -174,7 +174,7 @@ const DEMO_SCORES = [
             momentum: { score: 4, max: 20, comment: "Momentum had not fully turned upward." },
             volume: { score: 7, max: 15, comment: "Volume was average, not confirming yet." },
             sr: { score: 18, max: 25, comment: "Entry sat inside the range, not beyond it." },
-            candle: { score: 7, max: 10, comment: "Pattern was promising but unfinished." },
+            volatility: { score: 7, max: 10, comment: "Pattern was promising but unfinished." },
         },
     },
     {
@@ -224,20 +224,20 @@ const DEMO_SCORES = [
             momentum: { score: 14, max: 20, comment: "Selling impulse hadn't exhausted yet." },
             volume: { score: 12, max: 15, comment: "Volume confirmed the move down." },
             sr: { score: 21, max: 25, comment: "Entry was anchored right at resistance." },
-            candle: { score: 7, max: 10, comment: "Textbook rejection wick at the level." },
+            volatility: { score: 7, max: 10, comment: "Textbook rejection wick at the level." },
         },
     },
 ];
 
 /* ---------------------------------- Constants ---------------------------------- */
 
-const PARAM_KEYS = ["trend", "momentum", "volume", "sr", "candle"];
+const PARAM_KEYS = ["trend", "momentum", "volume", "sr", "volatility"];
 const PARAM_LABELS = {
     trend: "Trend",
     momentum: "Momentum",
     volume: "Volume",
     sr: "S/R",
-    candle: "Candle",
+    volatility: "Volatility",
 };
 
 const BADGE_STYLES = {
@@ -279,7 +279,7 @@ const WEAKNESS_PHRASE = {
     momentum: "confirmation",
     volume: "participation",
     sr: "structure",
-    candle: "entry timing",
+    volatility: "volatility",
 };
 
 const RUNTIME_STATUS_STYLE = {
@@ -944,7 +944,7 @@ const ScorePanel = ({ isDemo = false, trades = [], priceData = [] }) => {
                         ...s,
                         badge: s.badge ?? null,
                         badges: s.badges ?? (s.badge ? [s.badge] : []),
-                        verdict: s.verdict ?? s.coaching_tip ?? s.params?.candle?.comment ?? "",
+                        verdict: s.verdict ?? s.coaching_tip ?? s.params?.volatility?.comment ?? "",
                         runtimeOutcome: s.runtimeOutcome ?? s.runtime_outcome ?? null,
                     }))
                 );
